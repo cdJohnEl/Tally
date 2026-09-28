@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(timeout 90 node /tmp/firebase-smoke.mjs)",
+      "Bash(mkdir -p \"/mnt/c/Users/HP USER/Desktop/Code/HNG/task_1/scripts\")",
+      "Bash(mv /tmp/firebase-smoke.mjs \"/mnt/c/Users/HP USER/Desktop/Code/HNG/task_1/scripts/firebase-smoke.mjs\")",
+      "Bash(timeout 90 node scripts/firebase-smoke.mjs)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5174/)",
+      "Bash(echo \"HTTP $\\(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5174/\\)\")",
+      "Bash(curl -s -o /dev/null -w \"App.tsx: %{http_code}\\\\n\" http://localhost:5174/src/App.tsx)"
+    ]
+  }
+}
