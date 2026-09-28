@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   addDoc,
   collection,
@@ -14,6 +14,7 @@ import {
 import { firestore } from './firebase'
 import type { Priority, Todo } from './types'
 
+const USERS = 'users'
 const TODOS = 'todos'
 
 function friendlyError(err: unknown): string {
@@ -22,7 +23,7 @@ function friendlyError(err: unknown): string {
       ? String((err as { code: unknown }).code)
       : ''
   if (code.includes('permission-denied'))
-    return 'Firestore denied this request. Publish the security rules from the README, then reload.'
+    return 'Firestore denied this request. Publish the per-user security rules from the README, then reload.'
   if (code.includes('failed-precondition'))
     return 'Firestore is not enabled for this project. Create the database in the Firebase console.'
   if (code.includes('unavailable'))
@@ -45,14 +46,20 @@ export interface TodosApi {
   clearDone: () => Promise<void>
 }
 
-export function useTodos(): TodosApi {
+export function useTodos(uid: string | null): TodosApi {
   const [todos, setTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
   const [synced, setSynced] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const uidRef = useRef<string | null>(uid)
+  uidRef.current = uid
 
   useEffect(() => {
-    const q = query(collection(firestore(), TODOS), orderBy('createdAt', 'desc'))
+    if (!uid) return
+    const q = query(
+      collection(firestore(), USERS, uid, TODOS),
+      orderBy('createdAt', 'desc'),
+    )
     const unsub = onSnapshot(
       q,
       { includeMetadataChanges: true },
@@ -79,27 +86,36 @@ export function useTodos(): TodosApi {
       },
     )
     return unsub
-  }, [])
+  }, [uid])
 
-  const add = useCallback(async (title: string, priority: Priority | null, due: Date | null) => {
-    setError(null)
-    try {
-      await addDoc(collection(firestore(), TODOS), {
-        title,
-        done: false,
-        priority,
-        due: due ?? null,
-        createdAt: serverTimestamp(),
-      })
-    } catch (err) {
-      setError(friendlyError(err))
-    }
-  }, [])
+  const add = useCallback(
+    async (title: string, priority: Priority | null, due: Date | null) => {
+      const owner = uidRef.current
+      if (!owner) return
+      setError(null)
+      try {
+        await addDoc(collection(firestore(), USERS, owner, TODOS), {
+          title,
+          done: false,
+          priority,
+          due: due ?? null,
+          createdAt: serverTimestamp(),
+        })
+      } catch (err) {
+        setError(friendlyError(err))
+      }
+    },
+    [],
+  )
 
   const toggle = useCallback(async (todo: Todo) => {
+    const owner = uidRef.current
+    if (!owner) return
     setError(null)
     try {
-      await updateDoc(doc(firestore(), TODOS, todo.id), { done: !todo.done })
+      await updateDoc(doc(firestore(), USERS, owner, TODOS, todo.id), {
+        done: !todo.done,
+      })
     } catch (err) {
       setError(friendlyError(err))
     }
@@ -110,9 +126,11 @@ export function useTodos(): TodosApi {
       id: string,
       fields: { title: string; priority: Priority | null; due: Date | null },
     ) => {
+      const owner = uidRef.current
+      if (!owner) return
       setError(null)
       try {
-        await updateDoc(doc(firestore(), TODOS, id), {
+        await updateDoc(doc(firestore(), USERS, owner, TODOS, id), {
           title: fields.title,
           priority: fields.priority,
           due: fields.due,
@@ -125,20 +143,24 @@ export function useTodos(): TodosApi {
   )
 
   const remove = useCallback(async (id: string) => {
+    const owner = uidRef.current
+    if (!owner) return
     setError(null)
     try {
-      await deleteDoc(doc(firestore(), TODOS, id))
+      await deleteDoc(doc(firestore(), USERS, owner, TODOS, id))
     } catch (err) {
       setError(friendlyError(err))
     }
   }, [])
 
   const clearDone = useCallback(async () => {
+    const owner = uidRef.current
+    if (!owner) return
     setError(null)
     try {
       const batch = writeBatch(firestore())
       for (const t of todos) {
-        if (t.done) batch.delete(doc(firestore(), TODOS, t.id))
+        if (t.done) batch.delete(doc(firestore(), USERS, owner, TODOS, t.id))
       }
       await batch.commit()
     } catch (err) {

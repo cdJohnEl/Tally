@@ -10,8 +10,8 @@ export default function Setup() {
         <div className="setup-inner">
           <h1>Connect your Firebase project</h1>
           <p className="setup-lede">
-            The app is ready — it just needs to know which Firestore database to write to.
-            Three steps, about two minutes:
+            The app is ready — it just needs to know which Firebase project to use.
+            Four steps, about three minutes:
           </p>
           <ol className="setup-steps">
             <li>
@@ -32,20 +32,30 @@ export default function Setup() {
             <li>
               <span className="step-num">2</span>
               <div>
-                <strong>Create the Firestore database</strong>
+                <strong>Create the Firestore database and enable Google sign-in</strong>
                 <p>
-                  In the console: <em>Build → Firestore Database → Create database</em> (any
-                  region, production mode).
+                  <em>Build → Firestore Database → Create database</em> (any region), then{' '}
+                  <em>Build → Authentication → Sign-in method → Google → Enable</em>.
                 </p>
               </div>
             </li>
             <li>
               <span className="step-num">3</span>
               <div>
-                <strong>Publish the security rules, then restart</strong>
+                <strong>Publish the security rules</strong>
                 <p>
-                  Paste the rules from the README into <em>Firestore → Rules</em> and publish,
-                  then restart the dev server.
+                  Paste the rules from the README into <em>Firestore → Rules</em>. They keep
+                  every signed-in account's tasks private to that account.
+                </p>
+              </div>
+            </li>
+            <li>
+              <span className="step-num">4</span>
+              <div>
+                <strong>Restart the dev server</strong>
+                <p>
+                  Env vars are read at startup — stop <code>npm run dev</code> and start it
+                  again after editing <code>.env</code>.
                 </p>
               </div>
             </li>

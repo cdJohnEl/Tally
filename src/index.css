@@ -184,11 +184,60 @@ input {
   background: var(--amber);
 }
 
+.masthead-user {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.signout-btn {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 6px 2px;
+  transition: color 0.25s var(--ease-out);
+}
+
+.signout-btn:hover {
+  color: var(--red);
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--line-strong);
+  background: var(--green-soft);
+}
+
+.avatar-fallback {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--green-deep);
+}
+
 .masthead-grid {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: end;
   gap: 20px 32px;
+}
+
+.masthead-greet {
+  font-size: 15.5px;
+  color: var(--ink-2);
+  margin-bottom: 10px;
+}
+
+.masthead-greet strong {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .eyebrow {
@@ -1053,11 +1102,73 @@ ul.sheet-inner {
   padding-left: 14px;
 }
 
+.setup-error {
+  margin-top: 20px;
+  font-size: 13.5px;
+  color: var(--red);
+  background: var(--red-soft);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.google-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--white);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  box-shadow: var(--shadow-pill);
+  transition:
+    transform 0.25s var(--ease-spring),
+    box-shadow 0.3s var(--ease-out),
+    border-color 0.25s var(--ease-out);
+}
+
+.google-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+  border-color: var(--ink-3);
+}
+
+.google-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.google-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.google-btn svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.signin-note {
+  margin-top: 18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
 /* ———— responsive ———— */
 
 @media (max-width: 640px) {
   .masthead-grid {
     grid-template-columns: 1fr;
+  }
+
+  .masthead-user {
+    gap: 10px;
+  }
+
+  .sync {
+    letter-spacing: 0.04em;
   }
 
   .tally {

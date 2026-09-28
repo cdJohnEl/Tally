@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { User } from 'firebase/auth'
 import Masthead from './components/Masthead'
 import Composer from './components/Composer'
 import TodoList from './components/TodoList'
 import Footer from './components/Footer'
 import Setup from './components/Setup'
-import { firebaseReady } from './lib/firebase'
+import SignIn from './components/SignIn'
+import { firebaseReady, watchAuth, type AuthState } from './lib/firebase'
 import { useTodos } from './lib/todos'
 import type { Filter, Priority } from './lib/types'
 
@@ -12,11 +14,42 @@ export default function App() {
   if (!firebaseReady) {
     return <Setup />
   }
-  return <TodoApp />
+  return <AuthGate />
 }
 
-function TodoApp() {
-  const api = useTodos()
+function AuthGate() {
+  const [authState, setAuthState] = useState<AuthState>({ status: 'connecting' })
+
+  useEffect(() => watchAuth(setAuthState), [])
+
+  if (authState.status === 'connecting') {
+    return (
+      <main className="page">
+        <div className="masthead-top">
+          <span className="brand">
+            Tally<span className="brand-dot">.</span>
+          </span>
+        </div>
+        <TodoList
+          todos={[]}
+          loading
+          filter="all"
+          leavingIds={new Set()}
+          onToggle={() => {}}
+          onSave={() => {}}
+          onDelete={() => {}}
+        />
+      </main>
+    )
+  }
+  if (authState.status === 'signed-out') {
+    return <SignIn />
+  }
+  return <TodoApp user={authState.user} />
+}
+
+function TodoApp({ user }: { user: User }) {
+  const api = useTodos(user.uid)
   const [filter, setFilter] = useState<Filter>('all')
   const [leavingIds, setLeavingIds] = useState<ReadonlySet<string>>(new Set())
   const [dismissedError, setDismissedError] = useState<string | null>(null)
@@ -79,6 +112,7 @@ function TodoApp() {
   return (
     <main className="page">
       <Masthead
+        user={{ displayName: user.displayName, photoURL: user.photoURL }}
         totalCount={totalCount}
         doneCount={doneCount}
         synced={api.synced}

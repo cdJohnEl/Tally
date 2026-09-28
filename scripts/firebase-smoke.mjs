@@ -4,11 +4,6 @@ import {
   initializeFirestore,
   collection,
   addDoc,
-  getDocs,
-  query,
-  where,
-  deleteDoc,
-  doc,
 } from 'firebase/firestore'
 
 const env = Object.fromEntries(
@@ -38,26 +33,22 @@ if (!config.apiKey || !config.projectId || !config.appId) {
 const app = initializeApp(config)
 const db = initializeFirestore(app, { experimentalForceLongPolling: true })
 
+console.log('Probing rules: attempting an unauthenticated write to users/x/todos…')
 try {
-  const ref = await addDoc(collection(db, 'todos'), {
+  await addDoc(collection(db, 'users', 'smoke-probe', 'todos'), {
     title: '__smoke_test__',
     done: false,
-    priority: null,
-    due: null,
-    createdAt: new Date(),
   })
-  console.log('1/3 write OK   doc :', ref.id)
-
-  const snap = await getDocs(
-    query(collection(db, 'todos'), where('title', '==', '__smoke_test__')),
-  )
-  console.log('2/3 read OK    docs:', snap.size)
-
-  await deleteDoc(doc(db, 'todos', ref.id))
-  console.log('3/3 delete OK')
-  console.log('ALL GREEN — Firestore is reachable and the rules allow read/write.')
-} catch (err) {
-  console.error('FAIL firestore:', err.code ?? err.message)
-  console.error('→ If this is permission-denied, publish the rules from the README (Firestore → Rules), then re-run.')
+  console.log('⚠️  WRITE SUCCEEDED without auth — rules are still open.')
+  console.log('   Publish the per-user rules from the README so accounts stay private.')
   process.exitCode = 1
+} catch (err) {
+  const code = err?.code ?? String(err)
+  if (String(code).includes('permission-denied')) {
+    console.log('OK — unauthenticated writes are rejected. Rules are locked down correctly.')
+  } else {
+    console.error('Unexpected error:', code)
+    console.error('→ Check that Firestore is enabled and the rules from the README are published.')
+    process.exitCode = 1
+  }
 }

@@ -10,7 +10,10 @@
       "Bash(timeout 90 node scripts/firebase-smoke.mjs)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5174/)",
       "Bash(echo \"HTTP $\\(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5174/\\)\")",
-      "Bash(curl -s -o /dev/null -w \"App.tsx: %{http_code}\\\\n\" http://localhost:5174/src/App.tsx)"
+      "Bash(curl -s -o /dev/null -w \"App.tsx: %{http_code}\\\\n\" http://localhost:5174/src/App.tsx)",
+      "Bash(npx tsc *)",
+      "Bash(curl -s http://localhost:5176/src/components/SignIn.tsx)",
+      "Bash(echo \"signIn component served: $\\(curl -s http://localhost:5176/src/components/SignIn.tsx)"
     ]
   }
 }

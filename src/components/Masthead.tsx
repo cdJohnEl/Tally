@@ -1,4 +1,5 @@
 import TallyMarks from './TallyMarks'
+import { signOutUser } from '../lib/firebase'
 
 const QUOTES: { text: string; author: string }[] = [
   { text: 'The secret of getting ahead is getting started.', author: 'Mark Twain' },
@@ -25,7 +26,15 @@ function quoteOfTheDay(now: Date) {
   return QUOTES[day % QUOTES.length]
 }
 
+function greetingWord(now: Date): string {
+  const h = now.getHours()
+  if (h < 12) return 'morning'
+  if (h < 17) return 'afternoon'
+  return 'evening'
+}
+
 interface MastheadProps {
+  user: { displayName: string | null; photoURL: string | null }
   totalCount: number
   doneCount: number
   synced: boolean
@@ -39,11 +48,12 @@ function eyebrowFor(now: Date): string {
   return `${wd} · ${day} ${mo}`.toUpperCase()
 }
 
-export default function Masthead({ totalCount, doneCount, synced, loading }: MastheadProps) {
+export default function Masthead({ user, totalCount, doneCount, synced, loading }: MastheadProps) {
   const now = new Date()
   const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(now)
   const active = totalCount - doneCount
   const quote = quoteOfTheDay(now)
+  const firstName = user.displayName?.trim().split(/\s+/)[0] ?? 'there'
 
   let sub: string
   if (loading) {
@@ -62,13 +72,33 @@ export default function Masthead({ totalCount, doneCount, synced, loading }: Mas
         <span className="brand">
           Tally<span className="brand-dot">.</span>
         </span>
-        <span className={`sync${synced ? '' : ' is-offline'}`}>
-          <span className="sync-dot" aria-hidden="true" />
-          {synced ? 'Synced' : 'Offline'}
-        </span>
+        <div className="masthead-user">
+          <span className={`sync${synced ? '' : ' is-offline'}`}>
+            <span className="sync-dot" aria-hidden="true" />
+            {synced ? 'Synced' : 'Offline'}
+          </span>
+          <button type="button" className="signout-btn" onClick={() => void signOutUser()}>
+            Sign out
+          </button>
+          {user.photoURL ? (
+            <img
+              className="avatar"
+              src={user.photoURL}
+              alt=""
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span className="avatar avatar-fallback" aria-hidden="true">
+              {firstName.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
       </div>
       <div className="masthead-grid">
         <div>
+          <p className="masthead-greet">
+            Good {greetingWord(now)}, <strong>{firstName}</strong>.
+          </p>
           <p className="eyebrow">
             {eyebrowFor(now)} — <em>{doneCount} done</em>
           </p>
