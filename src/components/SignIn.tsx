@@ -1,5 +1,10 @@
 import { useState } from 'react'
 import { signInWithGoogle } from '../lib/firebase'
+import { Sparkles, UserCheck } from 'lucide-react'
+
+interface SignInProps {
+  onGuestSignIn?: () => void
+}
 
 function friendlyAuthError(err: unknown): string {
   const code =
@@ -42,7 +47,7 @@ function GoogleLogo() {
   )
 }
 
-export default function SignIn() {
+export default function SignIn({ onGuestSignIn }: SignInProps) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -62,26 +67,48 @@ export default function SignIn() {
     <main className="page setup">
       <div className="masthead-top">
         <span className="brand">
-          Tally<span className="brand-dot">.</span>
+          Catalyst<span className="brand-dot">.</span>
+        </span>
+        <span className="sync">
+          <span className="sync-dot" />
+          Productivity OS
         </span>
       </div>
       <div className="setup-card rise">
         <div className="setup-inner">
-          <h1>Your page, your tasks.</h1>
+          <div className="inline-flex items-center gap-2 mb-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-xs text-indigo-700 font-medium">
+            <Sparkles size={13} className="text-indigo-600" />
+            <span>PWA Mobile Productivity Suite</span>
+          </div>
+          <h1>Welcome to Catalyst OS</h1>
           <p className="setup-lede">
-            Sign in with Google and your task list stays private to your account — the same
-            page follows you to every device you sign in from.
+            Sign in with Google to sync your personal suite across all devices — including Tally
+            notes, Expense Ledger, Habit Tracker, and Focus Audio.
           </p>
           <button type="button" className="google-btn" onClick={handleSignIn} disabled={busy}>
             <GoogleLogo />
             {busy ? 'Connecting…' : 'Continue with Google'}
           </button>
+
+          {onGuestSignIn && (
+            <div className="mt-4 pt-4 border-t border-slate-200/60">
+              <button
+                type="button"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-medium transition cursor-pointer border border-slate-300/80"
+                onClick={onGuestSignIn}
+              >
+                <UserCheck size={16} className="text-slate-600" />
+                <span>Enter as Guest / Demo Mode</span>
+              </button>
+            </div>
+          )}
+
           {error && (
             <p className="setup-error" role="alert">
               {error}
             </p>
           )}
-          <p className="signin-note">First time here? Signing in creates your private page.</p>
+          <p className="signin-note">Signing in connects your private workspace and home screen.</p>
         </div>
       </div>
     </main>

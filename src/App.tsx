@@ -1,152 +1,235 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { User } from 'firebase/auth'
-import Masthead from './components/Masthead'
-import Composer from './components/Composer'
-import TodoList from './components/TodoList'
-import Footer from './components/Footer'
+import { useEffect, useState } from 'react'
 import Setup from './components/Setup'
 import SignIn from './components/SignIn'
-import { firebaseReady, watchAuth, type AuthState } from './lib/firebase'
-import { useTodos } from './lib/todos'
-import type { Filter, Priority } from './lib/types'
+import CatalystShell from './components/CatalystShell'
+import HomeScreen from './components/HomeScreen'
+import AppTransition from './components/AppTransition'
+import WallpaperPicker from './components/WallpaperPicker'
+
+// Encapsulated Apps
+import TallyApp from './apps/tally/TallyApp'
+import ExpenseLedgerApp from './apps/expenses/ExpenseLedgerApp'
+import HabitTrackerApp from './apps/habits/HabitTrackerApp'
+import FocusAudioApp from './apps/audio/FocusAudioApp'
+
+import { firebaseReady, watchAuth, signOutUser, type AuthState } from './lib/firebase'
+import { getSavedWallpaper, saveWallpaper } from './lib/wallpapers'
+import type { CatalystAppId, CatalystUser, WallpaperOption } from './lib/types'
+
+const GUEST_STORAGE_KEY = 'catalyst_guest_session'
 
 export default function App() {
-  if (!firebaseReady) {
-    return <Setup />
+  const [guestUser, setGuestUser] = useState<CatalystUser | null>(() => {
+    try {
+      const saved = localStorage.getItem(GUEST_STORAGE_KEY)
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
+
+  // If Firebase is not configured and not in guest mode, show Setup with option to launch Demo
+  if (!firebaseReady && !guestUser) {
+    return (
+      <Setup
+        onEnterDemo={() => {
+          const guest: CatalystUser = {
+            uid: 'guest-user',
+            displayName: 'Alex Mercer',
+            email: 'guest@catalyst.os',
+            photoURL: null,
+            isGuest: true,
+          }
+          localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(guest))
+          setGuestUser(guest)
+        }}
+      />
+    )
   }
-  return <AuthGate />
+
+  return (
+    <AuthGate
+      guestUser={guestUser}
+      onEnterGuestMode={() => {
+        const guest: CatalystUser = {
+          uid: 'guest-user',
+          displayName: 'Alex Mercer',
+          email: 'guest@catalyst.os',
+          photoURL: null,
+          isGuest: true,
+        }
+        localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(guest))
+        setGuestUser(guest)
+      }}
+      onClearGuest={() => {
+        localStorage.removeItem(GUEST_STORAGE_KEY)
+        setGuestUser(null)
+      }}
+    />
+  )
 }
 
-function AuthGate() {
+function AuthGate({
+  guestUser,
+  onEnterGuestMode,
+  onClearGuest,
+}: {
+  guestUser: CatalystUser | null
+  onEnterGuestMode: () => void
+  onClearGuest: () => void
+}) {
   const [authState, setAuthState] = useState<AuthState>({ status: 'connecting' })
 
-  useEffect(() => watchAuth(setAuthState), [])
+  useEffect(() => {
+    if (!firebaseReady) {
+      setAuthState({ status: 'signed-out' })
+      return
+    }
+    return watchAuth(setAuthState)
+  }, [])
+
+  // If user activated Guest Demo session
+  if (guestUser) {
+    return (
+      <CatalystAppSuite
+        user={guestUser}
+        onSignOut={() => {
+          onClearGuest()
+          void signOutUser()
+        }}
+      />
+    )
+  }
 
   if (authState.status === 'connecting') {
     return (
-      <main className="page">
+      <main className="page setup">
         <div className="masthead-top">
           <span className="brand">
-            Tally<span className="brand-dot">.</span>
+            Catalyst<span className="brand-dot">.</span>
+          </span>
+          <span className="sync">
+            <span className="sync-dot animate-pulse" />
+            Connecting OS
           </span>
         </div>
-        <TodoList
-          todos={[]}
-          loading
-          filter="all"
-          leavingIds={new Set()}
-          onToggle={() => {}}
-          onSave={() => {}}
-          onDelete={() => {}}
-        />
+        <div className="setup-card rise">
+          <div className="setup-inner text-center py-12">
+            <h2 className="text-xl font-medium text-slate-800 mb-2">Starting Catalyst Suite…</h2>
+            <p className="text-sm text-slate-500">Checking credentials and workspace storage</p>
+          </div>
+        </div>
       </main>
     )
   }
+
   if (authState.status === 'signed-out') {
-    return <SignIn />
-  }
-  return <TodoApp user={authState.user} />
-}
-
-function TodoApp({ user }: { user: User }) {
-  const api = useTodos(user.uid)
-  const [filter, setFilter] = useState<Filter>('all')
-  const [leavingIds, setLeavingIds] = useState<ReadonlySet<string>>(new Set())
-  const [dismissedError, setDismissedError] = useState<string | null>(null)
-  const timers = useRef(new Map<string, number>())
-
-  useEffect(() => {
-    const map = timers.current
-    return () => {
-      for (const t of map.values()) window.clearTimeout(t)
-      map.clear()
-    }
-  }, [])
-
-  const sorted = useMemo(() => {
-    return [...api.todos].sort(
-      (a, b) =>
-        (b.createdAt?.toMillis() ?? Number.POSITIVE_INFINITY) -
-        (a.createdAt?.toMillis() ?? Number.POSITIVE_INFINITY),
-    )
-  }, [api.todos])
-
-  const visible = useMemo(() => {
-    switch (filter) {
-      case 'active':
-        return sorted.filter((t) => !t.done)
-      case 'done':
-        return sorted.filter((t) => t.done)
-      default:
-        return sorted
-    }
-  }, [sorted, filter])
-
-  const doneCount = api.todos.length - sorted.filter((t) => !t.done).length
-  const totalCount = api.todos.length
-
-  function handleDelete(id: string) {
-    if (leavingIds.has(id)) return
-    setLeavingIds((prev) => new Set(prev).add(id))
-    const t = window.setTimeout(() => {
-      setLeavingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
-      void api.remove(id)
-      timers.current.delete(id)
-    }, 240)
-    timers.current.set(id, t)
+    return <SignIn onGuestSignIn={onEnterGuestMode} />
   }
 
-  function handleSave(
-    id: string,
-    fields: { title: string; priority: Priority | null; due: Date | null },
-  ) {
-    void api.update(id, fields)
+  // Real Firebase User authenticated
+  const catalystUser: CatalystUser = {
+    uid: authState.user.uid,
+    displayName: authState.user.displayName,
+    email: authState.user.email,
+    photoURL: authState.user.photoURL,
   }
-
-  const showError = api.error !== null && api.error !== dismissedError
 
   return (
-    <main className="page">
-      <Masthead
-        user={{ displayName: user.displayName, photoURL: user.photoURL }}
-        totalCount={totalCount}
-        doneCount={doneCount}
-        synced={api.synced}
-        loading={api.loading}
-      />
-      <Composer onAdd={(title, priority, due) => void api.add(title, priority, due)} />
-      {showError && (
-        <div className="banner" role="alert">
-          <span>{api.error}</span>
-          <button type="button" onClick={() => setDismissedError(api.error)}>
-            Dismiss
-          </button>
-        </div>
-      )}
-      <section className="sheet rise" style={{ animationDelay: '0.16s' }} aria-label="Task list">
-        <TodoList
-          todos={visible}
-          loading={api.loading}
-          filter={filter}
-          leavingIds={leavingIds}
-          onToggle={(todo) => void api.toggle(todo)}
-          onSave={handleSave}
-          onDelete={handleDelete}
+    <CatalystAppSuite
+      user={catalystUser}
+      onSignOut={() => {
+        onClearGuest()
+        void signOutUser()
+      }}
+    />
+  )
+}
+
+function CatalystAppSuite({
+  user,
+  onSignOut,
+}: {
+  user: CatalystUser
+  onSignOut: () => void
+}) {
+  const [activeApp, setActiveApp] = useState<CatalystAppId>('home')
+  const [transitioningToApp, setTransitioningToApp] = useState<CatalystAppId | null>(null)
+  const [wallpaper, setWallpaper] = useState<WallpaperOption>(getSavedWallpaper)
+  const [isWallpaperPickerOpen, setIsWallpaperPickerOpen] = useState(false)
+
+  const handleLaunchApp = (appId: Exclude<CatalystAppId, 'home'>) => {
+    setTransitioningToApp(appId)
+  }
+
+  const handleTransitionComplete = () => {
+    if (transitioningToApp) {
+      setActiveApp(transitioningToApp)
+      setTransitioningToApp(null)
+    }
+  }
+
+  const handleReturnHome = () => {
+    setActiveApp('home')
+  }
+
+  return (
+    <CatalystShell
+      currentWallpaper={wallpaper}
+      activeApp={activeApp}
+      onOpenWallpaper={() => setIsWallpaperPickerOpen(true)}
+      onReturnHome={handleReturnHome}
+    >
+      {/* OS Home Screen */}
+      {activeApp === 'home' && (
+        <HomeScreen
+          user={user}
+          currentWallpaper={wallpaper}
+          onLaunchApp={handleLaunchApp}
+          onOpenWallpaperPicker={() => setIsWallpaperPickerOpen(true)}
+          onSignOut={onSignOut}
         />
-      </section>
-      {totalCount > 0 && (
-        <Footer
-          filter={filter}
-          onFilter={setFilter}
-          totalCount={totalCount}
-          doneCount={doneCount}
-          onClearDone={() => void api.clearDone()}
+      )}
+
+      {/* Encapsulated Tally App */}
+      {activeApp === 'tally' && (
+        <TallyApp user={user} onBackToHome={handleReturnHome} />
+      )}
+
+      {/* Expense Ledger Placeholder */}
+      {activeApp === 'expenses' && (
+        <ExpenseLedgerApp onBackToHome={handleReturnHome} />
+      )}
+
+      {/* Habit Tracker Placeholder */}
+      {activeApp === 'habits' && (
+        <HabitTrackerApp onBackToHome={handleReturnHome} />
+      )}
+
+      {/* Focus Audio Placeholder */}
+      {activeApp === 'audio' && (
+        <FocusAudioApp onBackToHome={handleReturnHome} />
+      )}
+
+      {/* Animated Loading Transition Screen */}
+      {transitioningToApp && (
+        <AppTransition
+          appId={transitioningToApp}
+          onComplete={handleTransitionComplete}
         />
       )}
-    </main>
+
+      {/* Wallpaper Picker Modal */}
+      {isWallpaperPickerOpen && (
+        <WallpaperPicker
+          currentWallpaper={wallpaper}
+          onSelectWallpaper={(newWp) => {
+            setWallpaper(newWp)
+            saveWallpaper(newWp)
+          }}
+          onClose={() => setIsWallpaperPickerOpen(false)}
+        />
+      )}
+    </CatalystShell>
   )
 }
