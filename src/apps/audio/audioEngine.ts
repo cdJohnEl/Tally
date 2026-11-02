@@ -3,12 +3,35 @@
  * 100% procedural, offline-first synthesis for zero-download ambient generation.
  */
 
+// Ensure single global sound engine across HMR reloads
+declare global {
+  interface Window {
+    __CATALYST_SOUND_ENGINE__?: AudioEngine
+  }
+}
+
 class AudioEngine {
-  private ctx: AudioContext | null = null
+  public ctx: AudioContext | null = null
   private masterGain: GainNode | null = null
   private analyser: AnalyserNode | null = null
   private activeNodes: Map<string, { gain: GainNode; stop: () => void }> = new Map()
   private fadeInterval: number | null = null
+  private currentMasterVolumePercent: number = 80
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const existing = window.__CATALYST_SOUND_ENGINE__
+      if (existing && existing !== this) {
+        try {
+          existing.stopAll()
+          if (existing.ctx) {
+            void existing.ctx.close()
+          }
+        } catch {}
+      }
+      window.__CATALYST_SOUND_ENGINE__ = this
+    }
+  }
 
   private getContext(): AudioContext {
     if (!this.ctx) {
@@ -16,7 +39,8 @@ class AudioEngine {
       this.ctx = new AudioContextClass()
 
       this.masterGain = this.ctx.createGain()
-      this.masterGain.gain.setValueAtTime(0.8, this.ctx.currentTime)
+      const gainValue = Math.max(0, Math.min(1, this.currentMasterVolumePercent / 100))
+      this.masterGain.gain.setValueAtTime(gainValue, this.ctx.currentTime)
 
       this.analyser = this.ctx.createAnalyser()
       this.analyser.fftSize = 64
@@ -28,6 +52,11 @@ class AudioEngine {
 
     if (this.ctx.state === 'suspended') {
       void this.ctx.resume()
+    }
+
+    if (this.masterGain) {
+      const gainValue = Math.max(0, Math.min(1, this.currentMasterVolumePercent / 100))
+      this.masterGain.gain.setValueAtTime(gainValue, this.ctx.currentTime)
     }
 
     return this.ctx
@@ -100,9 +129,10 @@ class AudioEngine {
   }
 
   public setMasterVolume(volPercent: number): void {
+    this.currentMasterVolumePercent = volPercent
     if (!this.masterGain || !this.ctx) return
     const gainValue = Math.max(0, Math.min(1, volPercent / 100))
-    this.masterGain.gain.setTargetAtTime(gainValue, this.ctx.currentTime, 0.04)
+    this.masterGain.gain.setValueAtTime(gainValue, this.ctx.currentTime)
   }
 
   public setTrackVolume(trackId: string, volPercent: number): void {
@@ -433,21 +463,58 @@ class AudioEngine {
     })
   }
 
+  public isTrackActive(trackId: string): boolean {
+    return this.activeNodes.has(trackId)
+  }
+
+  public pause(): void {
+    if (this.fadeInterval) {
+      clearInterval(this.fadeInterval)
+      this.fadeInterval = null
+    }
+
+    // 1. Immediately mute master gain
+    if (this.masterGain && this.ctx) {
+      try {
+        this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime)
+      } catch {}
+    }
+
+    // 2. Suspend AudioContext to guarantee zero hardware audio output
+    if (this.ctx && this.ctx.state === 'running') {
+      try {
+        void this.ctx.suspend()
+      } catch {}
+    }
+  }
+
+  public resume(): void {
+    if (this.ctx) {
+      if (this.ctx.state === 'suspended') {
+        void this.ctx.resume()
+      }
+      if (this.masterGain) {
+        try {
+          const gainValue = Math.max(0, Math.min(1, this.currentMasterVolumePercent / 100))
+          this.masterGain.gain.setValueAtTime(gainValue, this.ctx.currentTime)
+        } catch {}
+      }
+    }
+  }
+
   public stopTrack(trackId: string): void {
     const track = this.activeNodes.get(trackId)
     if (!track) return
 
-    if (this.ctx) {
-      // Soft fast release
-      track.gain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05)
-      setTimeout(() => {
-        track.stop()
-        this.activeNodes.delete(trackId)
-      }, 70)
-    } else {
+    // Immediately remove from active map to prevent race conditions
+    this.activeNodes.delete(trackId)
+
+    try {
       track.stop()
-      this.activeNodes.delete(trackId)
-    }
+    } catch {}
+    try {
+      track.gain.disconnect()
+    } catch {}
   }
 
   public stopAll(): void {
@@ -456,10 +523,30 @@ class AudioEngine {
       this.fadeInterval = null
     }
 
+    // 1. Immediately mute master gain
+    if (this.masterGain && this.ctx) {
+      try {
+        this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime)
+      } catch {}
+    }
+
+    // 2. Stop and disconnect every track node
     this.activeNodes.forEach((track) => {
-      track.stop()
+      try {
+        track.stop()
+      } catch {}
+      try {
+        track.gain.disconnect()
+      } catch {}
     })
     this.activeNodes.clear()
+
+    // 3. Suspend context
+    if (this.ctx && this.ctx.state === 'running') {
+      try {
+        void this.ctx.suspend()
+      } catch {}
+    }
   }
 
   public startFadeout(durationSec: number, onComplete?: () => void): void {

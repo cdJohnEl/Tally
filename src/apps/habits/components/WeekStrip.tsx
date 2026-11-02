@@ -34,17 +34,17 @@ export default function WeekStrip({ selectedDate, onSelectDate }: WeekStripProps
   }
 
   return (
-    <div className="habit-week-strip" role="region" aria-label="Calendar Week">
+    <div className="habit-week-row" role="region" aria-label="Calendar Week">
       {days.map((item) => (
         <button
           key={item.dateKey}
           type="button"
           onClick={() => onSelectDate(item.dateKey)}
-          className={`habit-day-col ${item.isSelected ? 'is-selected' : ''}`}
+          className={`habit-week-col ${item.isSelected ? 'is-active' : ''}`}
           aria-pressed={item.isSelected}
         >
-          <span className="habit-day-label">{item.name}</span>
-          <div className="habit-day-circle">
+          <span className="habit-day-name">{item.name}</span>
+          <div className="habit-day-num">
             <span>{item.dateNumber}</span>
           </div>
         </button>

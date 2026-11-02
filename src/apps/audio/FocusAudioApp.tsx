@@ -19,6 +19,7 @@ import SoundCard from './components/SoundCard'
 import PresetBar from './components/PresetBar'
 import FocusTimer from './components/FocusTimer'
 import SavePresetModal from './components/SavePresetModal'
+import SpotifyFocusPlayer from './components/SpotifyFocusPlayer'
 import './focusAudio.css'
 
 interface FocusAudioAppProps {
@@ -136,16 +137,19 @@ export default function FocusAudioApp({ onBackToHome }: FocusAudioAppProps) {
       })
       setActivePresetId('deep-work')
     } else {
-      // Resume currently active sounds
+      // Resume sound engine and ensure all active tracks are synthesized
+      soundEngine.resume()
       activeTrackIds.forEach((id) => {
-        soundEngine.playTrack(id, trackStates[id].volume)
+        if (!soundEngine.isTrackActive(id)) {
+          soundEngine.playTrack(id, trackStates[id].volume)
+        }
       })
     }
     setIsMasterPlaying(true)
   }, [activeTrackIds, trackStates])
 
   const handleGlobalPause = useCallback(() => {
-    soundEngine.stopAll()
+    soundEngine.pause()
     setIsMasterPlaying(false)
   }, [])
 
@@ -224,6 +228,27 @@ export default function FocusAudioApp({ onBackToHome }: FocusAudioAppProps) {
       return next
     })
     showToast('Soundscape stopped')
+  }
+
+  // Layer an ambient sound with Spotify playback
+  const handleLayerAmbientSound = (id: string) => {
+    setTrackStates((prev) => {
+      const current = prev[id]
+      if (!current) return prev
+      const nextVol = current.volume > 0 ? current.volume : 50
+      soundEngine.playTrack(id, nextVol)
+      return {
+        ...prev,
+        [id]: {
+          ...current,
+          isPlaying: true,
+          volume: nextVol,
+        },
+      }
+    })
+    if (!isMasterPlaying) setIsMasterPlaying(true)
+    const trackName = SOUND_TRACKS.find((t) => t.id === id)?.name || id
+    showToast(`✨ Layered ${trackName} with Spotify!`)
   }
 
   // Load a Preset
@@ -318,47 +343,30 @@ export default function FocusAudioApp({ onBackToHome }: FocusAudioAppProps) {
   }, [activeTrackIds, trackStates])
 
   return (
-    <div className="focus-audio-root min-h-screen pb-16">
-      {/* Top Navigation Bar adhering to Catalyst Shell contract */}
-      <header className="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 py-3">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-          {/* Back button to Catalyst OS Home */}
-          <button
-            type="button"
-            onClick={onBackToHome}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-700/60 rounded-full px-3.5 py-1.5 transition-all focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-400"
-            aria-label="Return to Catalyst Home"
-          >
-            <ChevronLeft size={15} />
-            <span>Catalyst</span>
+    <div className="fa-root">
+      {/* Top Navigation Bar */}
+      <header className="fa-header">
+        <div className="fa-header-inner">
+          <button type="button" onClick={onBackToHome} className="fa-back-btn" aria-label="Return to Catalyst Home">
+            <ChevronLeft size={14} />
+            Catalyst
           </button>
-
-          <div className="flex items-center gap-2">
-            <Headphones size={16} className="text-sky-400" />
-            <h1 className="text-sm font-bold text-slate-100 tracking-wider uppercase">
-              Focus Audio
-            </h1>
+          <div className="fa-header-title">
+            <Headphones size={15} />
+            Focus Audio
           </div>
-
-          {/* Quick stop/clear button */}
           {activeTrackIds.length > 0 ? (
-            <button
-              type="button"
-              onClick={handleStopAll}
-              className="text-xs font-medium text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-full px-3 py-1.5 transition-colors"
-            >
-              Clear Mix
-            </button>
+            <button type="button" onClick={handleStopAll} className="fa-stop-btn">Clear Mix</button>
           ) : (
-            <div className="w-16" />
+            <div style={{ width: 72 }} />
           )}
         </div>
       </header>
 
-      {/* Main Soundscape Container */}
-      <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 pt-4 space-y-6">
+      {/* Main Container */}
+      <main className="fa-main">
         {/* Preset Selector Bar */}
-        <div className="w-full">
+        <div>
           <PresetBar
             presets={presets}
             activePresetId={activePresetId}
@@ -391,47 +399,38 @@ export default function FocusAudioApp({ onBackToHome }: FocusAudioAppProps) {
           />
         </section>
 
-        {/* Category Filter & Section Header */}
-        <section className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
-            <div className="flex items-center gap-2">
-              <Sliders size={16} className="text-sky-400" />
-              <h2 className="text-sm font-bold text-slate-200 tracking-wide">
-                Soundscape Mixer
-              </h2>
-              <span className="text-xs text-slate-400">
-                ({activeTrackIds.length} active)
-              </span>
-            </div>
+        {/* In-App Spotify Focus Lounge Deck */}
+        <section aria-label="Spotify Focus Lounge">
+          <SpotifyFocusPlayer
+            onLayerAmbientSound={handleLayerAmbientSound}
+            activeAmbientCount={activeTrackIds.length}
+          />
+        </section>
 
-            {/* Segmented Category Filter Buttons */}
-            <div className="flex items-center gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 self-start sm:self-auto">
-              {(
-                [
-                  { id: 'all', label: 'All Sounds' },
-                  { id: 'nature', label: 'Nature' },
-                  { id: 'environment', label: 'Environment' },
-                  { id: 'synth', label: 'Synthesized' },
-                ] as const
-              ).map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${
-                    selectedCategory === cat.id
-                      ? 'bg-slate-800 text-slate-100 shadow-sm font-semibold'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
+        {/* Mixer Section */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="fa-mixer-header">
+            <div className="fa-mixer-title">
+              <Sliders size={18} style={{ color: 'var(--fa-ink-3)' }} />
+              Soundscape Mixer
+              <span className="fa-mixer-count">{activeTrackIds.length} active</span>
+            </div>
+            <div className="fa-cat-tabs">
+              {([
+                { id: 'all', label: 'All' },
+                { id: 'nature', label: 'Nature' },
+                { id: 'environment', label: 'Environ.' },
+                { id: 'synth', label: 'Synth' },
+              ] as const).map((cat) => (
+                <button key={cat.id} type="button" onClick={() => setSelectedCategory(cat.id)}
+                  className={`fa-cat-tab${selectedCategory === cat.id ? ' active' : ''}`}>
                   {cat.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Ambient Sound Library Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          <div className="fa-grid">
             {filteredTracks.map((track) => {
               const state = trackStates[track.id]
               return (
@@ -458,11 +457,11 @@ export default function FocusAudioApp({ onBackToHome }: FocusAudioAppProps) {
         />
       )}
 
-      {/* Toast Notification */}
+      {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 border border-slate-700 text-slate-100 text-xs font-medium px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 animate-bounce">
-          <Sparkles size={14} className="text-sky-400" />
-          <span>{toastMessage}</span>
+        <div className="fa-toast">
+          <Sparkles size={13} />
+          {toastMessage}
         </div>
       )}
     </div>

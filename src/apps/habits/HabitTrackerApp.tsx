@@ -21,7 +21,7 @@ import InsightsView from './components/InsightsView'
 import ReminderModal from './components/ReminderModal'
 import './habits.css'
 
-export type HabitView = 'dashboard' | 'insights' | 'new-habit'
+export type HabitView = 'dashboard' | 'insights' | 'new-habit' | 'showcase'
 
 interface HabitTrackerAppProps {
   onBackToHome: () => void
@@ -32,7 +32,7 @@ export default function HabitTrackerApp({ onBackToHome, user }: HabitTrackerAppP
   const uid = user?.uid || 'guest-user'
   const displayName = user?.displayName ? user.displayName.split(' ')[0] : 'Budi'
 
-  // View state controller: single-screen application with state-based navigation
+  // View state: 'dashboard' (Screen 1) | 'new-habit' (Screen 2) | 'insights' (Screen 3) | 'showcase' (All 3)
   const [activeView, setActiveView] = useState<HabitView>('dashboard')
 
   // Habit Data States
@@ -126,7 +126,7 @@ export default function HabitTrackerApp({ onBackToHome, user }: HabitTrackerAppP
     void idbSaveAllHabits(uid, updatedHabits)
 
     if (isNowCompleted) {
-      showToast('🎉 Ritual logged! +50 Points earned')
+      showToast('🎉 Routine completed! +50 Points earned')
     }
   }
 
@@ -172,158 +172,196 @@ export default function HabitTrackerApp({ onBackToHome, user }: HabitTrackerAppP
     return getWeeklyInsights(habits, habitLogs)
   }, [habits, habitLogs])
 
+  // Reusable iOS Status Bar
+  const renderIOSBar = () => (
+    <div className="habit-ios-bar">
+      <span className="habit-ios-time">9:41</span>
+      <div className="habit-ios-icons">
+        <svg width="15" height="11" viewBox="0 0 17 11" fill="currentColor">
+          <path d="M1 8h2.5V3H1v5zm4 1.5h2.5V1H5v8.5zm4 1h2.5V0H9v10.5zm4-3.5h2.5V5H13v5z" />
+        </svg>
+        <svg width="14" height="11" viewBox="0 0 16 11" fill="currentColor">
+          <path d="M8 2.2C5.3 2.2 2.9 3.3 1.1 5L0 3.8C2.1 1.7 5 0.5 8 0.5s5.9 1.2 8 3.3L14.9 5C13.1 3.3 10.7 2.2 8 2.2zM8 5.7c-1.8 0-3.4.7-4.6 1.9l-1.1-1.1c1.5-1.5 3.5-2.3 5.7-2.3s4.2.8 5.7 2.3l-1.1 1.1C11.4 6.4 9.8 5.7 8 5.7zm0 3.5c-1 0-1.8.8-1.8 1.8s.8 1.8 1.8 1.8 1.8-.8 1.8-1.8-.8-1.8-1.8-1.8z" />
+        </svg>
+        <svg width="22" height="11" viewBox="0 0 25 12" fill="currentColor">
+          <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="currentColor" />
+          <rect x="2" y="2" width="16" height="8" rx="2" fill="currentColor" />
+          <path d="M23 4v4c.6 0 1-.4 1-1V5c0-.6-.4-1-1-1z" />
+        </svg>
+      </div>
+    </div>
+  )
+
+  // Screen 1: Dashboard Home
+  const renderDashboardScreen = () => (
+    <div className="habit-phone-frame">
+      {renderIOSBar()}
+      <div className="habit-screen-body">
+        {/* Header: Greeting, Live Date, Mascot Avatar */}
+        <section className="habit-home-header">
+          <div>
+            <h1 className="habit-greeting-text">{greeting}</h1>
+            <p className="habit-date-subtext">{formattedDate}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setActiveView('insights')}
+            className="habit-mascot-btn"
+            title="View Insights"
+            aria-label="View Insights"
+          >
+            <MascotAvatar />
+          </button>
+        </section>
+
+        {/* Horizontal Calendar Week Strip */}
+        <section>
+          <WeekStrip
+            selectedDate={selectedDate}
+            onSelectDate={(newDate) => setSelectedDate(newDate)}
+          />
+        </section>
+
+        {/* "Set the reminder" Banner Card */}
+        <section>
+          <ReminderBanner onOpenReminderModal={() => setIsReminderOpen(true)} />
+        </section>
+
+        {/* "Daily routine" Section */}
+        <section className="habit-routine-container">
+          <div className="habit-routine-header">
+            <h2 className="habit-routine-title">Daily routine</h2>
+            <button
+              type="button"
+              onClick={() => setActiveView('insights')}
+              className="habit-see-all-link"
+              aria-label="See all insights"
+            >
+              See all
+            </button>
+          </div>
+
+          {/* Dotted Timeline Checklist of Habits */}
+          <div className="habit-cards-timeline">
+            {habits.map((habit, index) => {
+              const isCompleted = completedIdsForDate.includes(habit.id)
+              return (
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  isCompleted={isCompleted}
+                  isFirst={index === 0}
+                  isLast={index === habits.length - 1}
+                  onToggle={handleToggleHabit}
+                  onClickCard={() => setActiveView('insights')}
+                />
+              )
+            })}
+          </div>
+        </section>
+      </div>
+
+      {/* Floating Action Button (FAB) for New Habit */}
+      <button
+        type="button"
+        onClick={() => setActiveView('new-habit')}
+        className="habit-fab"
+        aria-label="Add new habit"
+        title="Create New Habit"
+      >
+        <Plus size={26} strokeWidth={2.8} />
+      </button>
+    </div>
+  )
+
+  // Screen 2: New Habit View
+  const renderNewHabitScreen = () => (
+    <div className="habit-phone-frame">
+      {renderIOSBar()}
+      <NewHabitModal
+        onClose={() => setActiveView('dashboard')}
+        onSave={handleSaveNewHabit}
+        isPhoneScreen={true}
+      />
+    </div>
+  )
+
+  // Screen 3: Insights View
+  const renderInsightsScreen = () => (
+    <div className="habit-phone-frame">
+      {renderIOSBar()}
+      <InsightsView
+        stats={stats}
+        insights={weeklyInsights}
+        onBackToDashboard={() => setActiveView('dashboard')}
+      />
+    </div>
+  )
+
   return (
     <div className="habits-app-root">
-      {/* Catalyst Suite Topbar */}
-      <header className="habit-topbar">
+      {/* Catalyst Suite Top Bar */}
+      <header className="habit-catalyst-nav">
         <button
           type="button"
           onClick={onBackToHome}
-          className="habit-back-btn"
+          className="habit-back-pill"
           aria-label="Back to Catalyst Home"
         >
           <ChevronLeft size={16} />
           <span>Catalyst</span>
         </button>
 
-        <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-orange-400" />
-          <span className="habit-topbar-appname">Routine Lab</span>
-        </div>
-
-        {/* View Switcher Button in Topbar */}
-        {activeView === 'dashboard' ? (
-          <button
-            type="button"
-            onClick={() => setActiveView('insights')}
-            className="habit-topbar-insights-btn"
-            title="View Progress & Insights"
-          >
-            <BarChart3 size={14} />
-            <span>Insights</span>
-          </button>
-        ) : (
+        {/* View Switcher Pills */}
+        <div className="habit-view-tabs">
           <button
             type="button"
             onClick={() => setActiveView('dashboard')}
-            className="habit-topbar-insights-btn"
-            title="Back to Dashboard"
+            className={`habit-view-tab ${activeView === 'dashboard' ? 'active' : ''}`}
           >
-            <span>Dashboard</span>
+            Daily Routine
           </button>
-        )}
+          <button
+            type="button"
+            onClick={() => setActiveView('new-habit')}
+            className={`habit-view-tab ${activeView === 'new-habit' ? 'active' : ''}`}
+          >
+            New Habit
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveView('insights')}
+            className={`habit-view-tab ${activeView === 'insights' ? 'active' : ''}`}
+          >
+            Insights
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveView('showcase')}
+            className={`habit-view-tab ${activeView === 'showcase' ? 'active' : ''}`}
+          >
+            3-Screen Showcase
+          </button>
+        </div>
       </header>
 
-      {/* Constrained Single Mobile Screen Container (Constrained width on mobile & desktop) */}
-      <main className="habit-device-canvas">
-        {/* VIEW 1: Dashboard Main Screen */}
-        {activeView === 'dashboard' && (
-          <div className="habit-content-scroll animate-fade-in">
-            {/* Header: Greeting, Live Date, Mascot Avatar & Analytics Icon */}
-            <section className="habit-main-header">
-              <div>
-                <h1 className="habit-greeting-title">{greeting}</h1>
-                <p className="habit-header-date">{formattedDate}</p>
-              </div>
-
-              {/* Avatar + Bar Chart Analytics Trigger Group */}
-              <div className="habit-header-actions-group">
-                <button
-                  type="button"
-                  onClick={() => setActiveView('insights')}
-                  className="habit-header-analytics-btn"
-                  title="View Progress and Insights"
-                  aria-label="View Progress and Insights"
-                >
-                  <BarChart3 size={20} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveView('insights')}
-                  className="habit-avatar-btn"
-                  title="View Profile and Insights"
-                  aria-label="View Profile and Insights"
-                >
-                  <MascotAvatar />
-                </button>
-              </div>
-            </section>
-
-            {/* Horizontal Calendar Week Strip */}
-            <section>
-              <WeekStrip
-                selectedDate={selectedDate}
-                onSelectDate={(newDate) => setSelectedDate(newDate)}
-              />
-            </section>
-
-            {/* "Set the reminder" Banner Card */}
-            <section>
-              <ReminderBanner onOpenReminderModal={() => setIsReminderOpen(true)} />
-            </section>
-
-            {/* "Daily routine" Section */}
-            <section className="habit-routine-section">
-              <div className="habit-section-head">
-                <h2 className="habit-section-title">Daily routine</h2>
-                <button
-                  type="button"
-                  onClick={() => setActiveView('insights')}
-                  className="habit-see-all-btn"
-                  aria-label="See all insights"
-                >
-                  See all
-                </button>
-              </div>
-
-              {/* Dotted Timeline Checklist of Habits */}
-              <div className="habit-timeline-list">
-                {habits.map((habit, index) => {
-                  const isCompleted = completedIdsForDate.includes(habit.id)
-                  return (
-                    <HabitCard
-                      key={habit.id}
-                      habit={habit}
-                      isCompleted={isCompleted}
-                      isFirst={index === 0}
-                      isLast={index === habits.length - 1}
-                      onToggle={handleToggleHabit}
-                      onClickCard={() => setActiveView('insights')}
-                    />
-                  )
-                })}
-              </div>
-            </section>
-
-            {/* Fixed Floating Action Button (FAB) for New Habit */}
-            <button
-              type="button"
-              onClick={() => setActiveView('new-habit')}
-              className="habit-fab-btn"
-              aria-label="Add new habit"
-              title="Create New Habit"
-            >
-              <Plus size={26} strokeWidth={2.8} />
-            </button>
+      {/* Main Container */}
+      <main style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+        {activeView === 'showcase' ? (
+          /* Showcase Mode: All 3 Phones Side-by-Side (Matching Reference Mockup!) */
+          <div className="habit-showcase-container animate-fade-in">
+            {renderDashboardScreen()}
+            {renderNewHabitScreen()}
+            {renderInsightsScreen()}
           </div>
-        )}
-
-        {/* VIEW 2: Progress and Insights Screen (Standalone Single View) */}
-        {activeView === 'insights' && (
-          <InsightsView
-            stats={stats}
-            insights={weeklyInsights}
-            onBackToDashboard={() => setActiveView('dashboard')}
-          />
-        )}
-
-        {/* VIEW 3: New Habit Modal (Rendered when activeView === 'new-habit') */}
-        {activeView === 'new-habit' && (
-          <NewHabitModal
-            onClose={() => setActiveView('dashboard')}
-            onSave={handleSaveNewHabit}
-          />
+        ) : (
+          /* Focused Single-Phone Mode */
+          <div style={{ padding: '12px 16px 40px', display: 'flex', justifyContent: 'center', width: '100%' }}>
+            {activeView === 'dashboard' && renderDashboardScreen()}
+            {activeView === 'new-habit' && renderNewHabitScreen()}
+            {activeView === 'insights' && renderInsightsScreen()}
+          </div>
         )}
 
         {/* Morning Reminder Config Modal */}
@@ -336,7 +374,7 @@ export default function HabitTrackerApp({ onBackToHome, user }: HabitTrackerAppP
 
         {/* Celebratory Points Toast */}
         {toastMessage && (
-          <div className="habit-celebrate-toast">
+          <div className="habit-toast">
             <span>{toastMessage}</span>
           </div>
         )}

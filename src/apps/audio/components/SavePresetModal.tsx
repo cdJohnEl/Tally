@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { X, BookmarkPlus, Check } from 'lucide-react'
 import type { SoundTrackDef } from '../types'
 
@@ -8,95 +8,57 @@ interface SavePresetModalProps {
   activeTracks: { track: SoundTrackDef; volume: number }[]
 }
 
-export default function SavePresetModal({
-  onClose,
-  onSave,
-  activeTracks,
-}: SavePresetModalProps) {
+export default function SavePresetModal({ onClose, onSave, activeTracks }: SavePresetModalProps) {
   const [name, setName] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    onSave(name.trim())
-    onClose()
+    onSave(name.trim()); onClose()
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-sm bg-slate-900 border border-slate-700/80 rounded-2xl p-5 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <BookmarkPlus size={18} className="text-sky-400" />
-            <h3 className="text-base font-semibold text-slate-100">Save Custom Mix</h3>
+    <div className="fa-modal-overlay" onClick={onClose}>
+      <div className="fa-modal" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <BookmarkPlus size={18} style={{ color: 'var(--fa-ink-3)' }} />
+            <span className="fa-modal-title" style={{ fontSize: 18, marginBottom: 0 }}>Save Mix</span>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 flex items-center justify-center transition-colors"
-          >
-            <X size={15} />
+          <button type="button" onClick={onClose}
+            style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--fa-border-2)', background: 'var(--fa-surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--fa-ink-3)' }}>
+            <X size={14} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Preset Name
-            </label>
-            <input
-              type="text"
-              required
-              autoFocus
-              placeholder="e.g. Midnight Coding, Forest Retreat"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
-            />
-          </div>
+        <p className="fa-modal-sub">
+          {activeTracks.length > 0
+            ? `Saving ${activeTracks.length} active sound${activeTracks.length !== 1 ? 's' : ''}`
+            : 'No active sounds — activate some first'}
+        </p>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Current Active Soundscape Layers ({activeTracks.length})
-            </label>
-            <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
-              {activeTracks.length === 0 ? (
-                <p className="text-xs text-slate-500 italic py-2">No active sounds currently playing</p>
-              ) : (
-                activeTracks.map(({ track, volume }) => (
-                  <div
-                    key={track.id}
-                    className="flex items-center justify-between text-xs py-1 px-2 rounded bg-slate-800/40 text-slate-300"
-                  >
-                    <span>{track.name}</span>
-                    <span className="font-mono text-slate-400">{volume}%</span>
-                  </div>
-                ))
-              )}
+        <form onSubmit={handleSubmit}>
+          <input type="text" required autoFocus placeholder="e.g. Midnight Coding, Forest Retreat"
+            value={name} onChange={(e) => setName(e.target.value)}
+            className="fa-modal-input" />
+
+          {activeTracks.length > 0 && (
+            <div style={{ marginBottom: 16, maxHeight: 100, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {activeTracks.map(({ track, volume }) => (
+                <div key={track.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--fa-surface-2)', color: 'var(--fa-ink-2)' }}>
+                  <span>{track.name}</span>
+                  <span style={{ fontFamily: 'var(--fa-font-mono)', color: 'var(--fa-ink-3)' }}>{volume}%</span>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
 
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!name.trim() || activeTracks.length === 0}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-sky-500 hover:bg-sky-400 disabled:opacity-50 disabled:pointer-events-none text-slate-950 transition-colors flex items-center gap-1.5 shadow-lg shadow-sky-500/20"
-            >
-              <Check size={14} />
-              <span>Save Preset</span>
+          <div className="fa-modal-footer">
+            <button type="button" onClick={onClose} className="fa-modal-btn">Cancel</button>
+            <button type="submit" disabled={!name.trim() || activeTracks.length === 0} className="fa-modal-btn primary"
+              style={!name.trim() || activeTracks.length === 0 ? { opacity: 0.5, pointerEvents: 'none' } : {}}>
+              <Check size={14} style={{ display: 'inline', marginRight: 4 }} />
+              Save Preset
             </button>
           </div>
         </form>

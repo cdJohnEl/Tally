@@ -8,10 +8,6 @@ export default function ReminderBanner({ onOpenReminderModal }: ReminderBannerPr
   return (
     <div className="habit-reminder-card">
       <div className="reminder-text-col">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-orange-950 uppercase tracking-wide">
-          <Bell size={13} className="text-orange-700" />
-          <span>Daily Routine Alert</span>
-        </div>
         <h3 className="reminder-title">Set the reminder</h3>
         <p className="reminder-desc">
           Never miss your morning routine! Set a reminder to stay on track
@@ -22,8 +18,7 @@ export default function ReminderBanner({ onOpenReminderModal }: ReminderBannerPr
           className="reminder-cta-btn"
           aria-label="Set routine reminder now"
         >
-          <span>Set Now</span>
-          <ArrowRight size={14} strokeWidth={2.6} className="reminder-btn-arrow" />
+          Set Now
         </button>
       </div>
 
