@@ -49,6 +49,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     allowedHosts: true,
+    hmr: false,
     watch: {
       // inotify events don't cross the WSL2 /mnt/c mount — poll instead
       usePolling: true,

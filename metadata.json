@@ -1,6 +1,6 @@
 {
   "name": "Catalyst — PWA Productivity Suite",
-  "description": "Catalyst is a next-generation mobile OS-style PWA productivity suite featuring an app ecosystem with Tally tasks, Expense Ledger, Habit Tracker, Focus Audio, dynamic widgets, and customizable wallpapers.",
+  "description": "Catalyst is a next-generation mobile OS-style PWA productivity suite featuring an app ecosystem with Tally tasks, Pocket Lens Finance & AI Receipt Scanner, Habit Tracker, Focus Audio, dynamic widgets, and customizable wallpapers.",
   "permissions": [],
   "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

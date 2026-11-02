@@ -1,0 +1,1343 @@
+/* ==========================================================================
+   Catalyst — Habit Tracker ("Routine Lab")
+   Authentic mobile-first & desktop responsive UI matching reference design
+   ========================================================================== */
+
+:root {
+  --hb-bg: #f7f4ee;
+  --hb-surface: #ffffff;
+  --hb-dark: #231f20;
+  --hb-dark-brown: #38241c;
+  --hb-orange: #ff6b00;
+  --hb-orange-dark: #ea580c;
+  --hb-peach: #fee2cf;
+  --hb-peach-light: #fff5ed;
+  --hb-text-main: #1c1917;
+  --hb-text-muted: #8c827a;
+  --hb-text-subtle: #b8b0a8;
+  --hb-border: #ede7de;
+  --hb-radius-card: 24px;
+  --hb-radius-pill: 9999px;
+  --hb-font-sans: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Base Wrapper */
+.habits-app-root {
+  min-height: 100vh;
+  background-color: #121110;
+  font-family: var(--hb-font-sans);
+  color: var(--hb-text-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.habits-app-root * {
+  box-sizing: border-box;
+}
+
+.habits-app-root button {
+  box-sizing: border-box;
+  font-family: inherit;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Catalyst Suite Topbar / Breadcrumb */
+.habit-topbar {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(18, 17, 16, 0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 50;
+  position: sticky;
+  top: 0;
+}
+
+.habit-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #e7e5e4;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 6px 12px;
+  border-radius: var(--hb-radius-pill);
+  transition: all 0.15s ease;
+}
+
+.habit-back-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.habit-topbar-appname {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #fb923c;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.habit-topbar-insights-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: #ea580c;
+  padding: 6px 14px;
+  border-radius: var(--hb-radius-pill);
+  transition: all 0.15s ease;
+}
+
+.habit-topbar-insights-btn:hover {
+  background: #c2410c;
+  transform: translateY(-1px);
+}
+
+/* Device Canvas: Phone Frame matching reference screenshot */
+.habit-device-canvas {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background-color: var(--hb-bg);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 640px) {
+  .habit-device-canvas {
+    min-height: calc(100vh - 48px);
+    margin: 16px 0 40px;
+    border-radius: 38px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Scrollable Main Content Container */
+.habit-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  padding: 24px 20px 110px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* --------------------------------------------------------------------------
+   Header Row: Greeting & Mascot Tiger Avatar
+   -------------------------------------------------------------------------- */
+.habit-main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+}
+
+.habit-greeting-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--hb-text-main);
+  letter-spacing: -0.02em;
+  margin: 0 0 4px 0;
+  line-height: 1.15;
+}
+
+.habit-header-date {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--hb-text-muted);
+  margin: 0;
+}
+
+.habit-mascot-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.habit-mascot-avatar:hover {
+  transform: scale(1.1) rotate(6deg);
+}
+
+/* --------------------------------------------------------------------------
+   Horizontal Calendar Weekday Strip
+   -------------------------------------------------------------------------- */
+.habit-week-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+}
+
+.habit-day-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.habit-day-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hb-text-muted);
+}
+
+.habit-day-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--hb-text-main);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: all 0.15s ease;
+}
+
+.habit-day-col:hover .habit-day-circle {
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
+}
+
+/* Active Selected Day (Dark Brown Circle) */
+.habit-day-col.is-selected .habit-day-label {
+  color: var(--hb-dark);
+  font-weight: 700;
+}
+
+.habit-day-col.is-selected .habit-day-circle {
+  background: var(--hb-dark);
+  color: #ffffff;
+  border-color: var(--hb-dark);
+  box-shadow: 0 4px 14px rgba(35, 31, 32, 0.3);
+}
+
+/* --------------------------------------------------------------------------
+   "Set the reminder" Banner Card (Peach Card)
+   -------------------------------------------------------------------------- */
+.habit-reminder-card {
+  background: var(--hb-peach);
+  border-radius: var(--hb-radius-card);
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 6px 20px rgba(254, 226, 207, 0.7);
+  position: relative;
+  overflow: hidden;
+}
+
+.reminder-text-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  flex: 1;
+}
+
+.reminder-title {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #2b1810;
+  margin: 0;
+}
+
+.reminder-desc {
+  font-size: 0.8125rem;
+  color: #6c422c;
+  line-height: 1.35;
+  margin: 0 0 8px 0;
+}
+
+.reminder-cta-btn {
+  background-color: #2b1810 !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 10px 22px !important;
+  border-radius: 9999px !important;
+  font-size: 0.875rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+  border: none !important;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(43, 24, 16, 0.35) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+}
+
+.reminder-cta-btn:hover {
+  background-color: #170c08 !important;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 18px rgba(43, 24, 16, 0.45) !important;
+}
+
+.reminder-cta-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.reminder-cta-btn .reminder-btn-arrow {
+  transition: transform 0.2s ease;
+}
+
+.reminder-cta-btn:hover .reminder-btn-arrow {
+  transform: translateX(3px);
+}
+
+.reminder-illustration-col {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bell-art-container {
+  transition: transform 0.25s ease;
+}
+
+.habit-reminder-card:hover .bell-art-container {
+  transform: rotate(8deg) scale(1.05);
+}
+
+/* --------------------------------------------------------------------------
+   "Daily routine" Section & Timeline List
+   -------------------------------------------------------------------------- */
+.habit-routine-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.habit-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.habit-section-title {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--hb-text-main);
+  margin: 0;
+}
+
+.habit-see-all-btn {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--hb-text-muted);
+  transition: color 0.15s ease;
+}
+
+.habit-see-all-btn:hover {
+  color: var(--hb-orange);
+}
+
+.habit-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Individual Timeline Item with Dotted Connector Rail */
+.habit-timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+
+.timeline-connector-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  width: 26px;
+  flex-shrink: 0;
+}
+
+.timeline-dot-line {
+  position: absolute;
+  width: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 2px dotted #d6cec2;
+  z-index: 1;
+}
+
+.timeline-dot-line.top {
+  top: -16px;
+  height: 16px;
+}
+
+.timeline-dot-line.bottom {
+  bottom: -16px;
+  height: 16px;
+}
+
+.habit-check-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--hb-surface);
+  border: 2px solid #d6cec2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.habit-check-circle:hover {
+  border-color: var(--hb-orange);
+  transform: scale(1.1);
+}
+
+.habit-check-circle.is-checked {
+  background: var(--hb-orange);
+  border-color: var(--hb-orange);
+  box-shadow: 0 2px 8px rgba(255, 107, 0, 0.4);
+}
+
+/* Habit Card Body */
+.habit-card-body {
+  flex: 1;
+  background: var(--hb-surface);
+  border-radius: 22px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--hb-border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  text-align: left;
+}
+
+.habit-card-body:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.habit-card-completed {
+  opacity: 0.88;
+}
+
+.habit-card-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Squircles */
+.habit-icon-squircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.theme-peach {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+.theme-lime {
+  background: #ecfccb;
+  color: #65a30d;
+}
+
+.theme-pink {
+  background: #fce7f3;
+  color: #db2777;
+}
+
+.theme-orange {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.theme-sky {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.theme-brown {
+  background: #f5ebe6;
+  color: #38241c;
+}
+
+.habit-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.habit-card-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--hb-text-main);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.habit-card-completed .habit-card-title {
+  color: #4b453f;
+}
+
+.habit-card-streak {
+  font-size: 0.78125rem;
+  font-weight: 500;
+  color: var(--hb-text-muted);
+}
+
+.habit-card-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hb-text-muted);
+  flex-shrink: 0;
+}
+
+.habit-clock-icon {
+  color: #a8a29e;
+}
+
+.habit-duration-tag {
+  font-size: 0.78125rem;
+  font-weight: 600;
+  color: #78716c;
+}
+
+/* --------------------------------------------------------------------------
+   Floating Action Button (FAB)
+   -------------------------------------------------------------------------- */
+.habit-fab-btn {
+  position: absolute;
+  bottom: 28px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #38241c;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(56, 36, 28, 0.4);
+  z-index: 40;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s ease;
+}
+
+.habit-fab-btn:hover {
+  transform: scale(1.1) rotate(90deg);
+  background: var(--hb-orange);
+}
+
+/* --------------------------------------------------------------------------
+   Modals & Sheets (New Habit, Insights, Reminders)
+   -------------------------------------------------------------------------- */
+.habit-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 17, 16, 0.65);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+  animation: hbFadeIn 0.2s ease-out;
+}
+
+@keyframes hbFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.habit-modal-dialog {
+  background: var(--hb-bg);
+  border-radius: 32px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px 22px 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  position: relative;
+}
+
+.animate-rise {
+  animation: hbRiseUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hbRiseUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.habit-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 2px;
+}
+
+.habit-modal-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--hb-text-main);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.insights-title {
+  line-height: 1.15;
+}
+
+.habit-modal-close-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hb-text-main);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+}
+
+.habit-modal-close-btn:hover {
+  transform: scale(1.06);
+  background: #f1f5f9;
+}
+
+/* Calendar Doodle Hero Illustration */
+.habit-hero-illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 0 6px;
+}
+
+.calendar-doodle-svg {
+  filter: drop-shadow(0 4px 12px rgba(132, 204, 22, 0.2));
+}
+
+/* Form Body */
+.habit-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.habit-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.habit-field-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.habit-field-label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--hb-text-main);
+}
+
+.habit-text-input {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--hb-text-main);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.habit-text-input:focus {
+  border-color: var(--hb-orange);
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15);
+}
+
+/* Category select chips */
+.category-pill-select-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.cat-select-chip {
+  padding: 8px 14px;
+  border-radius: var(--hb-radius-pill);
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--hb-text-main);
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.cat-select-chip.is-selected {
+  background: #38241c;
+  color: #ffffff;
+  border-color: #38241c;
+}
+
+/* Two Column Inputs (Add date & Add amount) */
+.habit-two-col-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.habit-input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.habit-sub-input,
+.habit-sub-select {
+  width: 100%;
+  padding: 12px 34px 12px 14px;
+  border-radius: 16px;
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--hb-text-main);
+  outline: none;
+  appearance: none;
+}
+
+.habit-sub-select {
+  cursor: pointer;
+}
+
+.habit-input-suffix-icon {
+  position: absolute;
+  right: 12px;
+  color: #8c827a;
+  pointer-events: none;
+}
+
+/* Weekday Circle Buttons */
+.weekday-pill-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.weekday-circle-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--hb-text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.weekday-circle-btn:hover {
+  transform: translateY(-1px);
+}
+
+.weekday-circle-btn.is-active {
+  background: #231f20;
+  color: #ffffff;
+  border-color: #231f20;
+  box-shadow: 0 4px 10px rgba(35, 31, 32, 0.25);
+}
+
+/* Custom Checkbox */
+.habit-custom-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  accent-color: var(--hb-orange);
+  cursor: pointer;
+}
+
+/* Reminder switch */
+.habit-reminder-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.habit-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+
+.habit-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #e2e8f0;
+  border-radius: 9999px;
+  transition: 0.2s ease;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.habit-toggle-switch input:checked + .toggle-slider {
+  background-color: var(--hb-orange);
+}
+
+.habit-toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(22px);
+}
+
+.reminder-time-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  padding: 10px 14px;
+  border-radius: 14px;
+}
+
+.reminder-time-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--hb-text-muted);
+}
+
+.habit-time-picker {
+  border: none;
+  outline: none;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--hb-text-main);
+  background: transparent;
+  font-family: inherit;
+}
+
+/* Primary Button "Save Habit" / "Share Progress" */
+.habit-modal-footer {
+  margin-top: 8px;
+}
+
+.habit-save-primary-btn {
+  width: 100% !important;
+  height: 56px !important;
+  padding: 0 24px !important;
+  border-radius: var(--hb-radius-pill) !important;
+  background: linear-gradient(135deg, #ff7a1a 0%, #ea580c 100%) !important;
+  color: #ffffff !important;
+  font-size: 1.0625rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+  box-shadow: 0 10px 28px rgba(234, 88, 12, 0.38) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  cursor: pointer;
+}
+
+.habit-save-primary-btn:hover {
+  background: linear-gradient(135deg, #ff8c33 0%, #d94e08 100%) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(234, 88, 12, 0.48) !important;
+}
+
+.habit-save-primary-btn:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 6px 18px rgba(234, 88, 12, 0.3) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Screen 3: Diagonal-Striped Pillar Progress Chart
+   -------------------------------------------------------------------------- */
+.insights-chart-card {
+  background: var(--hb-surface);
+  border-radius: var(--hb-radius-card);
+  padding: 20px 18px 16px;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--hb-border);
+}
+
+.pillar-active-chip {
+  background: #fbf9f5;
+  border: 1px solid var(--hb-border);
+  border-radius: var(--hb-radius-pill);
+  padding: 8px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  transition: all 0.2s ease;
+}
+
+.striped-pillars-grid {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 250px;
+  gap: 12px;
+  padding: 8px 4px 4px;
+}
+
+.pillar-column-wrap {
+  flex: 1;
+  max-width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  height: 100%;
+  justify-content: flex-end;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.pillar-column-wrap:hover {
+  transform: translateY(-3px);
+}
+
+.pillar-column-wrap.is-highlighted .pillar-track-striped {
+  box-shadow: 0 0 0 2.5px #2b1810, 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: scale(1.02);
+}
+
+/* Diagonal hatched pill container */
+.pillar-track-striped {
+  width: 100%;
+  max-width: 68px;
+  height: 205px;
+  border-radius: var(--hb-radius-pill);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* Diagonal Stripe texture matching the reference screenshot */
+  background: repeating-linear-gradient(
+    45deg,
+    #f4eee6,
+    #f4eee6 7px,
+    #eae3d7 7px,
+    #eae3d7 14px
+  );
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pillar-fill-bar {
+  width: 100%;
+  border-radius: var(--hb-radius-pill);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 12px;
+  transition: height 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.pillar-percent-label {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  user-select: none;
+}
+
+.pillar-category-label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #38241c;
+  text-align: center;
+  user-select: none;
+  letter-spacing: -0.01em;
+}
+
+/* --------------------------------------------------------------------------
+   Points Earned & Stats Card (Screen 3)
+   -------------------------------------------------------------------------- */
+.habit-points-card {
+  background: var(--hb-surface);
+  border-radius: var(--hb-radius-card);
+  padding: 18px 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--hb-border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.points-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.points-title {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--hb-text-main);
+  margin: 0;
+}
+
+.points-subtitle {
+  font-size: 0.78125rem;
+  color: var(--hb-text-muted);
+}
+
+.points-score-badge {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--hb-orange-dark);
+}
+
+.points-stats-triplet {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-top: 6px;
+}
+
+.stat-triplet-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-triplet-caption {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hb-text-muted);
+}
+
+.stat-triplet-value {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--hb-text-main);
+}
+
+.stat-triplet-divider {
+  width: 1px;
+  height: 28px;
+  background-color: var(--hb-border);
+}
+
+/* --------------------------------------------------------------------------
+   Celebratory Toast
+   -------------------------------------------------------------------------- */
+.habit-celebrate-toast {
+  position: fixed;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #231f20;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: var(--hb-radius-pill);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: hbFadeIn 0.2s ease-out;
+  white-space: nowrap;
+}
+
+/* Quick time chips in reminder modal */
+.quick-times-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.quick-time-chip {
+  padding: 6px 12px;
+  border-radius: var(--hb-radius-pill);
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  font-size: 0.78125rem;
+  font-weight: 600;
+  color: var(--hb-text-main);
+  transition: all 0.15s ease;
+}
+
+.quick-time-chip.is-selected {
+  background: #38241c;
+  color: #ffffff;
+  border-color: #38241c;
+}
+
+.habit-time-picker-large {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  font-size: 1.25rem;
+  font-family: inherit;
+  font-weight: 800;
+  color: var(--hb-text-main);
+  outline: none;
+}
+
+/* --------------------------------------------------------------------------
+   Single-Screen Layout Container (Constrained width on mobile & desktop)
+   -------------------------------------------------------------------------- */
+.habit-device-canvas {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background-color: var(--hb-bg);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .habit-device-canvas {
+    min-height: calc(100vh - 48px);
+    margin: 16px auto 40px;
+    border-radius: 38px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Header actions group (Avatar + BarChart Analytics icon) */
+.habit-header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.habit-header-analytics-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hb-text-main);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.habit-header-analytics-btn:hover {
+  background: #ffedd5;
+  color: var(--hb-orange);
+  border-color: #fed7aa;
+  transform: translateY(-1px);
+}
+
+.habit-avatar-btn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Standalone Progress & Insights Screen View */
+.habit-insights-standalone-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 20px 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.habit-view-top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--hb-border);
+}
+
+.habit-view-header-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--hb-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.habit-round-nav-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--hb-surface);
+  border: 1px solid var(--hb-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hb-text-main);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.habit-round-nav-btn:hover {
+  transform: scale(1.06);
+  background: #f1f5f9;
+}
+
+.habit-screen-heading-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Animations */
+.animate-fade-in {
+  animation: hbFadeIn 0.22s ease-out;
+}
+
+/* Share Progress Button Container & Element (Screen 3) */
+.share-progress-container {
+  width: 100%;
+  padding-top: 4px;
+  padding-bottom: 8px;
+}
+
+.share-progress-btn {
+  width: 100% !important;
+  height: 56px !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(135deg, #ff7a1a 0%, #ea580c 100%) !important;
+  color: #ffffff !important;
+  font-size: 1.0625rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  border: none !important;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(234, 88, 12, 0.38) !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.share-progress-btn:hover {
+  background: linear-gradient(135deg, #ff8c33 0%, #d94e08 100%) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(234, 88, 12, 0.48) !important;
+}
+
+.share-progress-btn:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 6px 18px rgba(234, 88, 12, 0.3) !important;
+}
+
+.share-progress-btn.is-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 10px 28px rgba(16, 185, 129, 0.4) !important;
+}
+

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Check, Image as ImageIcon, Sparkles, Palette } from 'lucide-react'
+import { X, Check } from 'lucide-react'
 import { WALLPAPER_PRESETS, saveWallpaper } from '../lib/wallpapers'
 import type { WallpaperOption } from '../lib/types'
 
@@ -31,22 +31,24 @@ export default function WallpaperPicker({
     if (trimmed.startsWith('http')) {
       wp = {
         id: `custom-${Date.now()}`,
-        name: 'Custom Image',
+        name: 'Custom Texture',
         type: 'image',
         value: `url("${trimmed}") center/cover no-repeat fixed`,
-        textColor: 'light',
-        accentColor: '#38bdf8',
+        textColor: 'dark',
+        accentColor: '#336649',
         preview: `url("${trimmed}") center/cover no-repeat`,
       }
     } else {
       wp = {
         id: `custom-${Date.now()}`,
-        name: 'Custom Theme',
+        name: 'Custom Tone',
         type: 'gradient',
-        value: trimmed.includes('gradient') ? trimmed : `linear-gradient(135deg, ${trimmed}, #09090b)`,
-        textColor: 'light',
-        accentColor: '#818cf8',
-        preview: trimmed.includes('gradient') ? trimmed : trimmed,
+        value: trimmed.includes('gradient')
+          ? trimmed
+          : `radial-gradient(900px 480px at 12% -8%, rgba(51, 102, 73, 0.08), transparent 62%), ${trimmed}`,
+        textColor: trimmed.toLowerCase().includes('#1') || trimmed.toLowerCase().includes('#0') ? 'light' : 'dark',
+        accentColor: '#336649',
+        preview: trimmed,
       }
     }
 
@@ -58,101 +60,97 @@ export default function WallpaperPicker({
   return (
     <div className="catalyst-modal-backdrop" onClick={onClose}>
       <div
-        className="catalyst-wallpaper-modal"
+        className="catalyst-paper-dialog rise"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="wallpaper-picker-title"
+        aria-labelledby="paper-theme-title"
       >
-        <div className="modal-header">
-          <div className="flex items-center gap-2">
-            <Palette size={18} className="text-indigo-400" />
-            <h3 id="wallpaper-picker-title" className="text-lg font-semibold text-white">
-              Home Screen Wallpaper
-            </h3>
+        <div className="dialog-header">
+          <div>
+            <span className="dialog-eyebrow">AESTHETIC SYSTEM</span>
+            <h2 id="paper-theme-title" className="dialog-title">
+              Paper & Theme Swatches
+            </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="modal-close-btn"
-            aria-label="Close wallpaper picker"
+            className="dialog-close-btn"
+            aria-label="Close theme picker"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <div className="wallpaper-tabs">
+        <div className="dialog-tabs">
           <button
             type="button"
-            className={`tab-btn ${activeTab === 'presets' ? 'active' : ''}`}
+            className={`dialog-tab ${activeTab === 'presets' ? 'active' : ''}`}
             onClick={() => setActiveTab('presets')}
           >
-            <Sparkles size={14} />
-            Curated Styles ({WALLPAPER_PRESETS.length})
+            Curated Swatches ({WALLPAPER_PRESETS.length})
           </button>
           <button
             type="button"
-            className={`tab-btn ${activeTab === 'custom' ? 'active' : ''}`}
+            className={`dialog-tab ${activeTab === 'custom' ? 'active' : ''}`}
             onClick={() => setActiveTab('custom')}
           >
-            <ImageIcon size={14} />
-            Custom Image / Color
+            Custom Paper Tint
           </button>
         </div>
 
         {activeTab === 'presets' ? (
-          <div className="wallpapers-grid">
+          <div className="swatches-grid">
             {WALLPAPER_PRESETS.map((wp) => {
               const isSelected = currentWallpaper.id === wp.id
               return (
                 <button
                   key={wp.id}
                   type="button"
-                  className={`wallpaper-card ${isSelected ? 'selected' : ''}`}
+                  className={`swatch-card ${isSelected ? 'selected' : ''}`}
                   onClick={() => handleApplyPreset(wp)}
                 >
                   <div
-                    className="wallpaper-preview"
+                    className="swatch-sample"
                     style={{ background: wp.preview }}
                   >
                     {isSelected && (
-                      <div className="selected-indicator">
-                        <Check size={16} strokeWidth={3} />
+                      <div className="swatch-check">
+                        <Check size={14} strokeWidth={3} />
                       </div>
                     )}
                   </div>
-                  <span className="wallpaper-name">{wp.name}</span>
+                  <span className="swatch-name">{wp.name}</span>
                 </button>
               )
             })}
           </div>
         ) : (
-          <form onSubmit={handleApplyCustom} className="custom-wallpaper-form">
-            <label className="text-sm text-slate-300 font-medium">
-              Image URL or CSS Gradient:
-            </label>
+          <form onSubmit={handleApplyCustom} className="custom-swatch-form">
+            <label className="field-label">Custom Hex, Gradient, or Image URL:</label>
             <input
               type="text"
-              className="custom-url-input"
+              className="custom-swatch-input"
               value={customValue}
               onChange={(e) => setCustomValue(e.target.value)}
-              placeholder="e.g. https://images.unsplash.com/... or #1e1b4b"
+              placeholder="e.g. #f4efe4 or https://images.unsplash.com/..."
             />
-            <p className="text-xs text-slate-400">
-              Paste an Unsplash image URL or a CSS hex/gradient. Changes apply instantly.
+            <p className="custom-swatch-hint">
+              Enter any CSS background color, warm paper hex, or high-res texture URL.
             </p>
             <button
               type="submit"
               disabled={!customValue.trim()}
-              className="apply-custom-btn"
+              className="custom-apply-btn"
             >
-              Apply Custom Wallpaper
+              Apply Theme
             </button>
           </form>
         )}
 
-        <div className="modal-footer">
-          <button type="button" onClick={onClose} className="done-btn">
+        <div className="dialog-footer">
+          <button type="button" onClick={onClose} className="dialog-done-btn">
             Done
           </button>
         </div>

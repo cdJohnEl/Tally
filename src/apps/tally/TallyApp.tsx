@@ -5,7 +5,7 @@ import TodoList from './components/TodoList'
 import Footer from './components/Footer'
 import { useTodos } from './lib/todos'
 import type { Filter, Priority } from './lib/types'
-import { ArrowLeft, Home, Sparkles } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 interface TallyAppProps {
   user: {
@@ -79,70 +79,68 @@ export default function TallyApp({ user, onBackToHome }: TallyAppProps) {
   const showError = api.error !== null && api.error !== dismissedError
 
   return (
-    <div className="catalyst-app-container tally-theme-wrapper">
-      {/* Catalyst OS Top Navigation Bar */}
+    <main className="page tally-page-content rise">
+      {/* Editorial Navigation Breadcrumb */}
       {onBackToHome && (
-        <nav className="catalyst-app-header-nav" aria-label="Catalyst Navigation">
+        <div className="catalyst-breadcrumb-bar">
           <button
             type="button"
             onClick={onBackToHome}
-            className="catalyst-nav-back-btn"
-            title="Return to Catalyst Home Screen"
+            className="breadcrumb-back-btn"
+            title="Return to Catalyst Home"
           >
-            <ArrowLeft size={16} />
-            <Home size={15} />
-            <span>Catalyst OS</span>
+            <ArrowLeft size={14} />
+            <span>Catalyst</span>
           </button>
-          <div className="catalyst-nav-app-pill">
-            <span className="catalyst-nav-app-dot" />
-            <span className="catalyst-nav-app-title">Tally Notes & Tasks</span>
-          </div>
-          <div className="catalyst-nav-sync-status">
-            <Sparkles size={14} className="text-amber-500" />
-            <span>Active Module</span>
-          </div>
-        </nav>
+          <span className="breadcrumb-slash">/</span>
+          <span className="breadcrumb-current">Tally Tasks</span>
+        </div>
       )}
 
-      {/* Original Tally Application Shell */}
-      <main className="page tally-page-content">
-        <Masthead
-          user={{ displayName: user.displayName, photoURL: user.photoURL }}
+      {/* Tally Original Masthead */}
+      <Masthead
+        user={{ displayName: user.displayName, photoURL: user.photoURL }}
+        totalCount={totalCount}
+        doneCount={doneCount}
+        synced={api.synced}
+        loading={api.loading}
+      />
+
+      {/* Tally Original Composer */}
+      <Composer onAdd={(title, priority, due) => void api.add(title, priority, due)} />
+
+      {showError && (
+        <div className="banner" role="alert">
+          <span>{api.error}</span>
+          <button type="button" onClick={() => setDismissedError(api.error)}>
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Tally Original Sheet & List */}
+      <section className="sheet rise" style={{ animationDelay: '0.16s' }} aria-label="Task list">
+        <TodoList
+          todos={visible}
+          loading={api.loading}
+          filter={filter}
+          leavingIds={leavingIds}
+          onToggle={(todo) => void api.toggle(todo)}
+          onSave={handleSave}
+          onDelete={handleDelete}
+        />
+      </section>
+
+      {/* Tally Original Footer */}
+      {totalCount > 0 && (
+        <Footer
+          filter={filter}
+          onFilter={setFilter}
           totalCount={totalCount}
           doneCount={doneCount}
-          synced={api.synced}
-          loading={api.loading}
+          onClearDone={() => void api.clearDone()}
         />
-        <Composer onAdd={(title, priority, due) => void api.add(title, priority, due)} />
-        {showError && (
-          <div className="banner" role="alert">
-            <span>{api.error}</span>
-            <button type="button" onClick={() => setDismissedError(api.error)}>
-              Dismiss
-            </button>
-          </div>
-        )}
-        <section className="sheet rise" style={{ animationDelay: '0.16s' }} aria-label="Task list">
-          <TodoList
-            todos={visible}
-            loading={api.loading}
-            filter={filter}
-            leavingIds={leavingIds}
-            onToggle={(todo) => void api.toggle(todo)}
-            onSave={handleSave}
-            onDelete={handleDelete}
-          />
-        </section>
-        {totalCount > 0 && (
-          <Footer
-            filter={filter}
-            onFilter={setFilter}
-            totalCount={totalCount}
-            doneCount={doneCount}
-            onClearDone={() => void api.clearDone()}
-          />
-        )}
-      </main>
-    </div>
+      )}
+    </main>
   )
 }

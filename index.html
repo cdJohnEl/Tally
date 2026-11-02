@@ -3,10 +3,125 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function () {
+        // Prevent browser crypto extensions (e.g. evmAsk, MetaMask, Phantom) from throwing
+        // "TypeError: Cannot redefine property: ethereum" when injected into the applet preview iframe
+        try {
+          const origDefineProperty = Object.defineProperty;
+          Object.defineProperty = function (obj, prop, descriptor) {
+            if (obj === window && prop === 'ethereum') {
+              try {
+                return origDefineProperty.call(Object, obj, prop, {
+                  ...descriptor,
+                  configurable: true,
+                });
+              } catch (err) {
+                try {
+                  obj[prop] = descriptor && ('value' in descriptor ? descriptor.value : descriptor.get ? descriptor.get() : undefined);
+                } catch (e) {}
+                return obj;
+              }
+            }
+            return origDefineProperty.call(Object, obj, prop, descriptor);
+          };
+        } catch (e) {}
+
+        // Suppress benign browser extension collisions & Vite dev server HMR WebSocket disconnection errors in iframe
+        const origError = console.error;
+        console.error = function (...args) {
+          const msg = args.map(a => (a && (a.message || a.toString())) || '').join(' ');
+          if (
+            msg.includes('Cannot redefine property: ethereum') ||
+            msg.includes('chrome-extension://') ||
+            msg.includes('moz-extension://') ||
+            msg.includes('WebSocket closed without opened') ||
+            msg.includes('[vite] server connection lost') ||
+            (msg.includes('[vite]') && msg.includes('WebSocket'))
+          ) {
+            return;
+          }
+          return origError.apply(console, args);
+        };
+
+        window.addEventListener('error', function (event) {
+          const filename = (event && event.filename) || '';
+          const msg = (event && (event.message || (event.error && event.error.message))) || '';
+          if (
+            msg.includes('Cannot redefine property: ethereum') ||
+            filename.includes('chrome-extension://') ||
+            filename.includes('moz-extension://') ||
+            msg.includes('WebSocket closed without opened') ||
+            (msg.includes('[vite]') && msg.includes('WebSocket'))
+          ) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function (event) {
+          const reason = event && event.reason;
+          const msg = (reason && (reason.message || reason.toString())) || '';
+          if (
+            msg.includes('Cannot redefine property: ethereum') ||
+            msg.includes('chrome-extension://') ||
+            msg.includes('moz-extension://') ||
+            msg.includes('WebSocket closed without opened')
+          ) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+
+        if (typeof window !== 'undefined' && window.WebSocket) {
+          const NativeWS = window.WebSocket;
+          class ViteMockWS extends EventTarget {
+            constructor() {
+              super();
+              this.readyState = 1;
+              this.binaryType = 'blob';
+              this.protocol = 'vite-hmr';
+              this.url = '';
+              this.bufferedAmount = 0;
+              this.extensions = '';
+            }
+            send() {}
+            close() {
+              this.readyState = 3;
+              try {
+                this.dispatchEvent(new CloseEvent('close', { wasClean: true }));
+              } catch (e) {}
+            }
+          }
+          const CustomWS = function (url, protocols) {
+            const isHmr =
+              protocols === 'vite-hmr' ||
+              (Array.isArray(protocols) && protocols.includes('vite-hmr'));
+            if (isHmr) {
+              const mock = new ViteMockWS();
+              setTimeout(() => {
+                try {
+                  mock.dispatchEvent(new Event('open'));
+                } catch (e) {}
+              }, 0);
+              return mock;
+            }
+            return new NativeWS(url, protocols);
+          };
+          CustomWS.prototype = NativeWS.prototype;
+          CustomWS.CONNECTING = NativeWS.CONNECTING !== undefined ? NativeWS.CONNECTING : 0;
+          CustomWS.OPEN = NativeWS.OPEN !== undefined ? NativeWS.OPEN : 1;
+          CustomWS.CLOSING = NativeWS.CLOSING !== undefined ? NativeWS.CLOSING : 2;
+          CustomWS.CLOSED = NativeWS.CLOSED !== undefined ? NativeWS.CLOSED : 3;
+          window.WebSocket = CustomWS;
+        }
+      })();
+    </script>
     <meta name="theme-color" content="#0f172a" />
-    <meta name="description" content="Catalyst is a next-generation mobile OS-style PWA productivity suite featuring an app ecosystem with Tally tasks, Expense Ledger, Habit Tracker, Focus Audio, dynamic widgets, and customizable wallpapers." />
+    <meta name="description" content="Catalyst is a next-generation mobile OS-style PWA productivity suite featuring an app ecosystem with Tally tasks, Pocket Lens Finance & AI Receipt Scanner, Habit Tracker, Focus Audio, dynamic widgets, and customizable wallpapers." />
     <meta property="og:title" content="Catalyst — PWA Productivity Suite" />
-    <meta property="og:description" content="Catalyst is a next-generation mobile OS-style PWA productivity suite featuring an app ecosystem with Tally tasks, Expense Ledger, Habit Tracker, Focus Audio, dynamic widgets, and customizable wallpapers." />
+    <meta property="og:description" content="Catalyst is a next-generation mobile OS-style PWA productivity suite featuring an app ecosystem with Tally tasks, Pocket Lens Finance & AI Receipt Scanner, Habit Tracker, Focus Audio, dynamic widgets, and customizable wallpapers." />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

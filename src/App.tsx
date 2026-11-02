@@ -8,7 +8,7 @@ import WallpaperPicker from './components/WallpaperPicker'
 
 // Encapsulated Apps
 import TallyApp from './apps/tally/TallyApp'
-import ExpenseLedgerApp from './apps/expenses/ExpenseLedgerApp'
+import PocketLensApp from './apps/pocketlens/PocketLensApp'
 import HabitTrackerApp from './apps/habits/HabitTrackerApp'
 import FocusAudioApp from './apps/audio/FocusAudioApp'
 
@@ -110,12 +110,12 @@ function AuthGate({
           </span>
           <span className="sync">
             <span className="sync-dot animate-pulse" />
-            Connecting OS
+            Connecting Suite
           </span>
         </div>
         <div className="setup-card rise">
           <div className="setup-inner text-center py-12">
-            <h2 className="text-xl font-medium text-slate-800 mb-2">Starting Catalyst Suite…</h2>
+            <h2 className="text-xl font-medium text-slate-800 mb-2">Opening Catalyst…</h2>
             <p className="text-sm text-slate-500">Checking credentials and workspace storage</p>
           </div>
         </div>
@@ -174,17 +174,11 @@ function CatalystAppSuite({
   }
 
   return (
-    <CatalystShell
-      currentWallpaper={wallpaper}
-      activeApp={activeApp}
-      onOpenWallpaper={() => setIsWallpaperPickerOpen(true)}
-      onReturnHome={handleReturnHome}
-    >
-      {/* OS Home Screen */}
+    <CatalystShell currentWallpaper={wallpaper}>
+      {/* OS Home Screen with Tally's authentic layout */}
       {activeApp === 'home' && (
         <HomeScreen
           user={user}
-          currentWallpaper={wallpaper}
           onLaunchApp={handleLaunchApp}
           onOpenWallpaperPicker={() => setIsWallpaperPickerOpen(true)}
           onSignOut={onSignOut}
@@ -196,14 +190,14 @@ function CatalystAppSuite({
         <TallyApp user={user} onBackToHome={handleReturnHome} />
       )}
 
-      {/* Expense Ledger Placeholder */}
+      {/* Pocket Lens — Modern Finance & Receipt AI Tracker */}
       {activeApp === 'expenses' && (
-        <ExpenseLedgerApp onBackToHome={handleReturnHome} />
+        <PocketLensApp onBackToCatalyst={handleReturnHome} />
       )}
 
-      {/* Habit Tracker Placeholder */}
+      {/* Habit Tracker — Routine Lab */}
       {activeApp === 'habits' && (
-        <HabitTrackerApp onBackToHome={handleReturnHome} />
+        <HabitTrackerApp user={user} onBackToHome={handleReturnHome} />
       )}
 
       {/* Focus Audio Placeholder */}
@@ -211,7 +205,7 @@ function CatalystAppSuite({
         <FocusAudioApp onBackToHome={handleReturnHome} />
       )}
 
-      {/* Animated Loading Transition Screen */}
+      {/* Paper & Ink Loading Transition Screen */}
       {transitioningToApp && (
         <AppTransition
           appId={transitioningToApp}
@@ -219,7 +213,7 @@ function CatalystAppSuite({
         />
       )}
 
-      {/* Wallpaper Picker Modal */}
+      {/* Paper Theme Swatch Picker Modal */}
       {isWallpaperPickerOpen && (
         <WallpaperPicker
           currentWallpaper={wallpaper}

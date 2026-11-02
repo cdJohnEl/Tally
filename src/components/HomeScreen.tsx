@@ -1,209 +1,319 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   FileText,
   Wallet,
   Flame,
   Headphones,
   Palette,
-  LogOut,
+  Download,
 } from 'lucide-react'
 import DynamicWidgets from './DynamicWidgets'
 import WeatherWidget from './WeatherWidget'
-import type { CatalystAppId, CatalystUser, WallpaperOption } from '../lib/types'
+import TallyMarks from '../apps/tally/components/TallyMarks'
+import { usePWAInstall } from '../lib/usePWAInstall'
+import type { CatalystAppId, CatalystUser } from '../lib/types'
 
 interface HomeScreenProps {
   user: CatalystUser
-  currentWallpaper: WallpaperOption
   onLaunchApp: (appId: Exclude<CatalystAppId, 'home'>) => void
   onOpenWallpaperPicker: () => void
   onSignOut: () => void
 }
 
-interface AppIconDefinition {
-  id: Exclude<CatalystAppId, 'home'>
-  title: string
-  subtitle: string
-  icon: typeof FileText
-  badge?: string
-  gradient: string
-  shadowColor: string
+const QUOTES: { text: string; author: string }[] = [
+  { text: 'The secret of getting ahead is getting started.', author: 'Mark Twain' },
+  { text: 'It always seems impossible until it is done.', author: 'Nelson Mandela' },
+  { text: 'Well done is better than well said.', author: 'Benjamin Franklin' },
+  { text: 'Action is the foundational key to all success.', author: 'Pablo Picasso' },
+  { text: 'Small deeds done are better than great deeds planned.', author: 'Peter Marshall' },
+  { text: 'Nothing will work unless you do.', author: 'Maya Angelou' },
+  { text: 'Either you run the day, or the day runs you.', author: 'Jim Rohn' },
+  { text: 'Start where you are. Use what you have. Do what you can.', author: 'Arthur Ashe' },
+  { text: 'Focus on being productive instead of busy.', author: 'Tim Ferriss' },
+]
+
+function quoteOfTheDay(now: Date) {
+  const start = new Date(now.getFullYear(), 0, 0)
+  const day = Math.floor((now.getTime() - start.getTime()) / 86_400_000)
+  return QUOTES[day % QUOTES.length]
 }
 
-const APPS: AppIconDefinition[] = [
+function greetingWord(now: Date): string {
+  const h = now.getHours()
+  if (h < 12) return 'morning'
+  if (h < 17) return 'afternoon'
+  return 'evening'
+}
+
+function eyebrowFor(now: Date): string {
+  const wd = new Intl.DateTimeFormat('en-GB', { weekday: 'short' }).format(now)
+  const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric' }).format(now)
+  const mo = new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(now)
+  return `${wd} · ${day} ${mo}`.toUpperCase()
+}
+
+interface AppIconItem {
+  id: Exclude<CatalystAppId, 'home'>
+  name: string
+  subtitle: string
+  icon: typeof FileText
+  gradient: string
+  badgeText?: string
+  badgeColor?: string
+}
+
+const APPS: AppIconItem[] = [
   {
     id: 'tally',
-    title: 'Tally',
-    subtitle: 'Tasks & Notes',
+    name: 'Tally',
+    subtitle: 'Tasks',
     icon: FileText,
-    badge: 'Live',
-    gradient: 'linear-gradient(135deg, #336649 0%, #1c3b2a 100%)',
-    shadowColor: 'rgba(51, 102, 73, 0.45)',
+    gradient: 'linear-gradient(135deg, #336649 0%, #274f38 100%)',
+    badgeText: 'Active',
+    badgeColor: '#274f38',
   },
   {
     id: 'expenses',
-    title: 'Expense Ledger',
-    subtitle: 'Finance & Budget',
+    name: 'Pocket Lens',
+    subtitle: 'Finance',
     icon: Wallet,
-    badge: 'Phase 1',
-    gradient: 'linear-gradient(135deg, #10b981 0%, #065f46 100%)',
-    shadowColor: 'rgba(16, 185, 129, 0.45)',
+    gradient: 'linear-gradient(135deg, #7047eb 0%, #4c1d95 100%)',
+    badgeText: 'Active',
+    badgeColor: '#7047eb',
   },
   {
     id: 'habits',
-    title: 'Habit Tracker',
-    subtitle: 'Daily Streaks',
+    name: 'Habits',
+    subtitle: 'Streaks',
     icon: Flame,
-    badge: 'Phase 1',
-    gradient: 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)',
-    shadowColor: 'rgba(245, 158, 11, 0.45)',
+    gradient: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+    badgeText: 'Phase 1',
+    badgeColor: '#b45309',
   },
   {
     id: 'audio',
-    title: 'Focus Audio',
-    subtitle: 'Sound & Timer',
+    name: 'Focus Audio',
+    subtitle: 'Timer',
     icon: Headphones,
-    badge: 'Phase 1',
-    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%)',
-    shadowColor: 'rgba(139, 92, 246, 0.45)',
+    gradient: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+    badgeText: 'Phase 1',
+    badgeColor: '#4f46e5',
   },
 ]
 
 export default function HomeScreen({
   user,
-  currentWallpaper: _currentWallpaper,
   onLaunchApp,
   onOpenWallpaperPicker,
   onSignOut,
 }: HomeScreenProps) {
+  const now = new Date()
+  const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(now)
+  const quote = quoteOfTheDay(now)
+  const firstName = user.displayName?.trim().split(/\s+/)[0] ?? 'there'
+  const { isInstallable, install } = usePWAInstall()
   const [pressedId, setPressedId] = useState<string | null>(null)
 
-  const handleAppClick = (appId: Exclude<CatalystAppId, 'home'>) => {
+  // Read local tally stats
+  const tallyStats = useMemo(() => {
+    try {
+      const saved = localStorage.getItem(`catalyst_tally_todos_${user.uid}`)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          const done = parsed.filter((t: { done: boolean }) => t.done).length
+          return { done, total: parsed.length }
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return { done: 2, total: 3 }
+  }, [user.uid])
+
+  const handleLaunch = (appId: Exclude<CatalystAppId, 'home'>) => {
     setPressedId(appId)
     setTimeout(() => {
       setPressedId(null)
       onLaunchApp(appId)
-    }, 150)
+    }, 120)
   }
 
   return (
-    <div className="catalyst-home-screen">
-      {/* Top Dynamic Widgets Layer */}
-      <section className="home-widgets-container" aria-label="Catalyst Dashboard Widgets">
-        <DynamicWidgets user={user} onLaunchApp={onLaunchApp} />
+    <main className="page catalyst-home-page rise">
+      {/* Editorial Masthead */}
+      <header className="masthead">
+        <div className="masthead-top">
+          <span className="brand">
+            Catalyst<span className="brand-dot">.</span>
+          </span>
+
+          <div className="masthead-user">
+            <span className="sync">
+              <span className="sync-dot" aria-hidden="true" />
+              Suite Online
+            </span>
+
+            {isInstallable && (
+              <button
+                type="button"
+                className="signout-btn flex items-center gap-1"
+                onClick={install}
+                title="Install Catalyst PWA"
+              >
+                <Download size={11} />
+                <span>Install</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="signout-btn flex items-center gap-1"
+              onClick={onOpenWallpaperPicker}
+              title="Change paper theme"
+            >
+              <Palette size={11} />
+              <span>Theme</span>
+            </button>
+
+            <button type="button" className="signout-btn" onClick={onSignOut}>
+              Sign out
+            </button>
+
+            {user.photoURL ? (
+              <img
+                className="avatar"
+                src={user.photoURL}
+                alt=""
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="avatar avatar-fallback" aria-hidden="true">
+                {firstName.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Masthead Grid with Greeting & Tally Marks */}
+        <div className="masthead-grid">
+          <div>
+            <p className="masthead-greet">
+              Good {greetingWord(now)}, <strong>{firstName}</strong>.
+            </p>
+            <p className="eyebrow">
+              {eyebrowFor(now)} — <em>{tallyStats.done} tallies today</em>
+            </p>
+            <h1>{weekday}</h1>
+            <p className="masthead-quote">
+              “{quote.text}” <span className="quote-author">— {quote.author}</span>
+            </p>
+            <p className="masthead-sub">
+              Catalyst Productivity Suite — tap an application icon below to launch.
+            </p>
+          </div>
+          <TallyMarks done={tallyStats.done} total={tallyStats.total} />
+        </div>
+      </header>
+
+      {/* Dynamic Paper Widgets Dispatch (Time & Weather) */}
+      <section className="catalyst-dispatches-grid" aria-label="Live dispatches">
+        <DynamicWidgets />
         <WeatherWidget />
       </section>
 
-      {/* Main OS App Grid */}
-      <section className="home-apps-section" aria-label="Catalyst Applications">
-        <div className="section-header-row">
+      {/* Applications Grid: Tactile App Icons on Paper */}
+      <section className="catalyst-app-icons-shelf" aria-label="Applications launcher">
+        <div className="shelf-header">
           <div className="flex items-center gap-2">
-            <span className="dot-pulse" />
-            <h3 className="section-title">Productivity Suite</h3>
+            <span className="shelf-dot" />
+            <span className="shelf-title">APPLICATION LAUNCHER</span>
           </div>
-          <span className="section-count">{APPS.length} Modules</span>
+          <span className="shelf-count">{APPS.length} Modules</span>
         </div>
 
-        <div className="home-apps-grid">
+        <div className="catalyst-icons-grid">
           {APPS.map((app) => {
             const Icon = app.icon
             const isPressed = pressedId === app.id
+            const isTally = app.id === 'tally'
+
             return (
               <button
                 key={app.id}
                 type="button"
-                className={`app-grid-item ${isPressed ? 'is-pressed' : ''}`}
-                onClick={() => handleAppClick(app.id)}
-                title={`Launch ${app.title}`}
+                className={`paper-app-icon-item ${isPressed ? 'is-pressed' : ''}`}
+                onClick={() => handleLaunch(app.id)}
+                title={`Launch ${app.name}`}
               >
                 <div
-                  className="app-icon-squircle"
-                  style={{
-                    background: app.gradient,
-                    boxShadow: `0 10px 24px -4px ${app.shadowColor}`,
-                  }}
+                  className="icon-squircle-box"
+                  style={{ background: app.gradient }}
                 >
-                  <Icon size={32} className="app-icon-svg" strokeWidth={2.2} />
-                  {app.badge && <span className="app-badge">{app.badge}</span>}
+                  <Icon size={28} className="icon-svg-glyph" strokeWidth={2.2} />
+                  {isTally ? (
+                    <span className="icon-notify-badge" title={`${tallyStats.total - tallyStats.done} open tasks`}>
+                      {tallyStats.total - tallyStats.done}
+                    </span>
+                  ) : (
+                    app.badgeText && <span className="icon-tiny-chip">{app.badgeText}</span>
+                  )}
                 </div>
-                <span className="app-title-label">{app.title}</span>
-                <span className="app-subtitle-label">{app.subtitle}</span>
+
+                <div className="icon-labels-col">
+                  <span className="icon-app-name">{app.name}</span>
+                  <span className="icon-app-sub">{app.subtitle}</span>
+                </div>
               </button>
             )
           })}
 
-          {/* Wallpaper Customizer App Icon */}
+          {/* Wallpaper / Theme App Icon */}
           <button
             type="button"
-            className="app-grid-item"
+            className="paper-app-icon-item"
             onClick={onOpenWallpaperPicker}
-            title="Change Wallpaper & Themes"
+            title="Open Paper & Theme Swatches"
           >
             <div
-              className="app-icon-squircle wallpaper-app-icon"
+              className="icon-squircle-box theme-squircle"
               style={{
-                background: 'linear-gradient(135deg, #475569 0%, #1e293b 100%)',
-                boxShadow: '0 10px 24px -4px rgba(71, 85, 105, 0.45)',
+                background: 'linear-gradient(135deg, #57534e 0%, #292524 100%)',
               }}
             >
-              <Palette size={32} className="app-icon-svg text-indigo-300" strokeWidth={2.2} />
-              <span className="app-badge theme-badge">Custom</span>
+              <Palette size={28} className="icon-svg-glyph text-amber-200" strokeWidth={2.2} />
+              <span className="icon-tiny-chip">Paper</span>
             </div>
-            <span className="app-title-label">Wallpaper</span>
-            <span className="app-subtitle-label">Theme & Styles</span>
+
+            <div className="icon-labels-col">
+              <span className="icon-app-name">Themes</span>
+              <span className="icon-app-sub">Swatches</span>
+            </div>
           </button>
         </div>
       </section>
 
-      {/* Quick OS Bar / Bottom Dock */}
-      <footer className="home-dock-container" aria-label="Catalyst Dock">
-        <div className="dock-glass-bar">
-          {APPS.map((app) => {
-            const Icon = app.icon
-            return (
-              <button
-                key={`dock-${app.id}`}
-                type="button"
-                className="dock-icon-btn"
-                onClick={() => onLaunchApp(app.id)}
-                title={`Launch ${app.title}`}
-              >
-                <div
-                  className="dock-icon-inner"
-                  style={{ background: app.gradient }}
-                >
-                  <Icon size={20} className="text-white" strokeWidth={2.2} />
-                </div>
-              </button>
-            )
-          })}
-
-          <div className="dock-separator" />
-
-          {/* Wallpaper quick trigger */}
-          <button
-            type="button"
-            className="dock-icon-btn"
-            onClick={onOpenWallpaperPicker}
-            title="Change Wallpaper"
-          >
-            <div className="dock-icon-inner bg-slate-800 border border-slate-700">
-              <Palette size={20} className="text-indigo-400" />
-            </div>
-          </button>
-
-          {/* Sign Out trigger */}
-          <button
-            type="button"
-            className="dock-icon-btn dock-signout"
-            onClick={onSignOut}
-            title="Sign out of Catalyst"
-          >
-            <div className="dock-icon-inner bg-rose-950/40 border border-rose-800/40">
-              <LogOut size={18} className="text-rose-400" />
-            </div>
-          </button>
+      {/* Editorial Footer */}
+      <footer className="catalyst-editorial-footer">
+        <div className="footer-meta-row">
+          <span className="footer-tagline">
+            Catalyst — an integrated PWA productivity suite.
+          </span>
+          <div className="footer-actions">
+            <button
+              type="button"
+              className="footer-btn"
+              onClick={onOpenWallpaperPicker}
+            >
+              Paper & Theme
+            </button>
+            <span className="footer-dot">·</span>
+            <button type="button" className="footer-btn" onClick={onSignOut}>
+              Sign out
+            </button>
+          </div>
         </div>
       </footer>
-    </div>
+    </main>
   )
 }
